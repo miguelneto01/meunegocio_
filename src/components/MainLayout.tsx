@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../store';
+import React, { useState, useEffect, useRef } from 'react';
+import { useAuth, useData } from '../store';
 import { 
   LayoutDashboard, 
   Package, 
@@ -36,9 +36,24 @@ import Admin from './Admin';
 
 export default function MainLayout() {
   const { user, setUser } = useAuth();
+  const { produtos } = useData();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  const produtosComEstoqueBaixo = produtos.filter(p => p.estoque <= 5);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -185,15 +200,6 @@ export default function MainLayout() {
             >
               <Menu size={28} />
             </button>
-            
-            <div className="relative w-full group hidden sm:block">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-600 transition-colors" size={18} />
-              <input 
-                type="text" 
-                placeholder="Pesquisar..." 
-                className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm font-medium"
-              />
-            </div>
 
             {/* Mobile Logo */}
             <div className="sm:hidden flex items-center gap-2">
@@ -205,10 +211,39 @@ export default function MainLayout() {
           </div>
           
           <div className="flex items-center gap-2 lg:gap-4 ml-4">
-            <button className="p-2.5 text-slate-400 hover:bg-slate-50 rounded-xl transition-all relative">
-              <Bell size={20} />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
+            <div className="relative" ref={notificationRef}>
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="p-2.5 text-slate-400 hover:bg-slate-50 rounded-xl transition-all relative"
+              >
+                <Bell size={20} />
+                {produtosComEstoqueBaixo.length > 0 && (
+                  <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                )}
+              </button>
+
+              {showNotifications && (
+                <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50">
+                  <div className="p-4 border-b border-slate-100 bg-slate-50">
+                    <h3 className="font-bold text-slate-800">Notificações</h3>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                    {produtosComEstoqueBaixo.length > 0 ? (
+                      produtosComEstoqueBaixo.map(p => (
+                        <div key={p.id} className="p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => { setActiveTab('produtos'); setShowNotifications(false); }}>
+                          <p className="font-bold text-slate-800 text-sm">{p.nome}</p>
+                          <p className="text-xs text-red-500 font-medium mt-1">Estoque baixo: {p.estoque} unidades</p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-6 text-center text-slate-500 text-sm">
+                        Nenhuma notificação no momento.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="h-8 w-px bg-slate-100 mx-1 hidden sm:block"></div>
             <div className="flex items-center gap-3">
               <div className="text-right hidden md:block">
