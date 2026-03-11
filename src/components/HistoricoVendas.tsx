@@ -86,7 +86,7 @@ export default function HistoricoVendas() {
                   <tr key={v.id} className="hover:bg-slate-50 transition">
                     <td className="p-4 text-slate-600">{format(dataVenda, 'dd/MM/yyyy HH:mm')}</td>
                     <td className="p-4 font-medium text-slate-800">{v.clienteNome || 'Cliente não informado'}</td>
-                    <td className="p-4 uppercase text-sm font-semibold text-slate-600">{v.formaPagamento}</td>
+                    <td className="p-4 uppercase text-sm font-semibold text-slate-600">{v.formaPagamento === 'credito' ? 'FIADO' : v.formaPagamento}</td>
                     <td className="p-4 font-bold text-emerald-600">{formatCurrency(v.total)}</td>
                     <td className="p-4 flex gap-2">
                       <button 
@@ -132,7 +132,7 @@ export default function HistoricoVendas() {
               <div className="flex items-center gap-2"><User size={16} className="text-slate-400"/> <strong>Cliente:</strong> {vendaSelecionada.clienteNome || 'Não informado'}</div>
               <div className="flex items-center gap-2"><Calendar size={16} className="text-slate-400"/> <strong>Data:</strong> {format(vendaSelecionada.data?.toDate ? vendaSelecionada.data.toDate() : new Date(vendaSelecionada.data), 'dd/MM/yyyy')}</div>
               <div className="flex items-center gap-2"><Clock size={16} className="text-slate-400"/> <strong>Hora:</strong> {format(vendaSelecionada.data?.toDate ? vendaSelecionada.data.toDate() : new Date(vendaSelecionada.data), 'HH:mm:ss')}</div>
-              <div className="flex items-center gap-2"><DollarSign size={16} className="text-slate-400"/> <strong>Pagamento:</strong> <span className="uppercase">{vendaSelecionada.formaPagamento}</span></div>
+              <div className="flex items-center gap-2"><DollarSign size={16} className="text-slate-400"/> <strong>Pagamento:</strong> <span className="uppercase">{vendaSelecionada.formaPagamento === 'credito' ? 'FIADO' : vendaSelecionada.formaPagamento}</span></div>
             </div>
 
             <div className="border-t border-b border-dashed border-slate-300 py-4 mb-6">

@@ -165,7 +165,7 @@ export default function Dashboard() {
                 </div>
                 <div className="text-right">
                   <div className="font-black text-slate-800 text-xs lg:text-sm">{formatCurrency(Number(v.total))}</div>
-                  <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">{v.formaPagamento}</div>
+                  <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">{v.formaPagamento === 'credito' ? 'FIADO' : v.formaPagamento}</div>
                 </div>
               </div>
             ))}

@@ -49,7 +49,7 @@ export default function Relatorios() {
           rows.push([
             v.data?.toDate ? format(v.data.toDate(), 'dd/MM/yyyy HH:mm') : new Date(v.data).toLocaleString('pt-BR'),
             v.clienteNome,
-            v.formaPagamento.toUpperCase(),
+            v.formaPagamento === 'credito' ? 'FIADO' : v.formaPagamento.toUpperCase(),
             formatCurrency(val)
           ]);
         });
@@ -227,7 +227,7 @@ export default function Relatorios() {
       const rows = vendas.map((v: any) => [
         v.data?.toDate ? format(v.data.toDate(), 'dd/MM/yyyy HH:mm') : new Date(v.data).toLocaleString('pt-BR'),
         v.clienteNome || 'Não informado',
-        v.formaPagamento.toUpperCase(),
+        v.formaPagamento === 'credito' ? 'FIADO' : v.formaPagamento.toUpperCase(),
         formatCurrency(Number(v.total) || 0)
       ]);
 

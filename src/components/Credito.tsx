@@ -13,6 +13,7 @@ export default function Credito() {
   const [apenasPendentes, setApenasPendentes] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [showLimparModal, setShowLimparModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState<any>(null);
   const [negociacao, setNegociacao] = useState<any>(null);
   const [valorPago, setValorPago] = useState('');
   const [novasParcelas, setNovasParcelas] = useState('');
@@ -75,6 +76,17 @@ export default function Credito() {
       setShowLimparModal(false);
     } catch (e) {
       showToast('Erro ao limpar registros', 'error');
+    }
+  };
+
+  const excluirCredito = async () => {
+    if (!showDeleteModal) return;
+    try {
+      await db.collection('credito').doc(showDeleteModal.id).delete();
+      showToast('Fiado excluído com sucesso', 'success');
+      setShowDeleteModal(null);
+    } catch (e) {
+      showToast('Erro ao excluir fiado', 'error');
     }
   };
 
@@ -147,15 +159,20 @@ export default function Credito() {
                       : <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md text-xs font-bold">QUITADO</span>
                     }
                   </td>
-                  <td className="p-4">
+                  <td className="p-4 flex gap-2">
                     {c.saldo > 0 && (
                       <button onClick={() => {
                         setNegociacao(c);
-                        setValorPago('');
+                        setValorPago(maskCurrency(c.valorParcela.toString()));
                         setNovasParcelas('');
                         setShowModal(true);
-                      }} className="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-lg text-sm font-medium hover:bg-indigo-200 transition">
-                        Negociar
+                      }} className="bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-indigo-200 transition">
+                        Pagar Parcela
+                      </button>
+                    )}
+                    {user?.tipo === 'admin' && (
+                      <button onClick={() => setShowDeleteModal(c)} className="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-red-200 transition" title="Excluir Fiado">
+                        <Trash2 size={16} />
                       </button>
                     )}
                   </td>
@@ -172,7 +189,7 @@ export default function Credito() {
       {showModal && negociacao && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-xl">
-            <h3 className="text-xl font-bold mb-2">Negociar Crédito</h3>
+            <h3 className="text-xl font-bold mb-2">Pagar Parcela</h3>
             <p className="text-slate-600 mb-4">Cliente: <span className="font-bold text-slate-800">{negociacao.clienteNome}</span></p>
             <div className="bg-slate-50 p-4 rounded-xl mb-4 border border-slate-100">
               <div className="text-sm text-slate-500">Saldo Atual</div>
@@ -219,6 +236,23 @@ export default function Credito() {
             <div className="flex justify-center gap-3">
               <button onClick={() => setShowLimparModal(false)} className="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition font-medium flex-1">Cancelar</button>
               <button onClick={limparQuitados} className="px-5 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-medium shadow-sm flex-1">Sim, Limpar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Active Credit Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-xl border border-slate-100 text-center">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={32} />
+            </div>
+            <h3 className="text-xl font-bold mb-2 text-slate-800">Excluir Fiado</h3>
+            <p className="text-slate-500 mb-8">Tem certeza que deseja excluir este fiado ativo de <strong>{showDeleteModal.clienteNome}</strong>? Esta ação não pode ser desfeita.</p>
+            <div className="flex justify-center gap-3">
+              <button onClick={() => setShowDeleteModal(null)} className="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition font-medium flex-1">Cancelar</button>
+              <button onClick={excluirCredito} className="px-5 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-medium shadow-sm flex-1">Sim, Excluir</button>
             </div>
           </div>
         </div>

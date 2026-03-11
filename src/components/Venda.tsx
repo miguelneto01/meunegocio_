@@ -79,9 +79,10 @@ export default function Venda() {
 
   const generateReceipt = (vendaData: any) => {
     try {
+      const docHeight = Math.max(150, 80 + (vendaData.itens.length * 5) + 40);
       const doc = new jsPDF({
         unit: 'mm',
-        format: [80, 150] // Thermal printer format
+        format: [80, docHeight] // Dynamic height for single continuous receipt
       });
 
       doc.setFontSize(10);
@@ -119,7 +120,7 @@ export default function Venda() {
         y += 4;
         doc.text(`Entrada: R$ ${vendaData.entrada.toFixed(2)}`, 5, y);
         y += 4;
-        doc.text(`Saldo: R$ ${vendaData.saldo.toFixed(2)}`, 5, y);
+        doc.text(`Saldo (Fiado): R$ ${vendaData.saldo.toFixed(2)}`, 5, y);
         y += 4;
         doc.text(`Parcelas: ${vendaData.parcelas}x R$ ${vendaData.valorParcela.toFixed(2)}`, 5, y);
       }
@@ -424,17 +425,22 @@ export default function Venda() {
             <div className="space-y-3">
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Forma de Pagamento</label>
               <div className="grid grid-cols-2 gap-2">
-                {['dinheiro', 'pix', 'cartao', 'credito'].map(f => (
+                {[
+                  { id: 'dinheiro', label: 'Dinheiro' },
+                  { id: 'pix', label: 'PIX' },
+                  { id: 'cartao', label: 'Cartão' },
+                  { id: 'credito', label: 'Fiado' }
+                ].map(f => (
                   <button 
-                    key={f}
-                    onClick={() => setFormaPagamento(f)}
+                    key={f.id}
+                    onClick={() => setFormaPagamento(f.id)}
                     className={`py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                      formaPagamento === f 
+                      formaPagamento === f.id 
                         ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/50' 
                         : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                     }`}
                   >
-                    {f}
+                    {f.label}
                   </button>
                 ))}
               </div>
@@ -664,7 +670,7 @@ export default function Venda() {
                 <span>TOTAL:</span>
                 <span>{formatCurrency(showReceiptModal.total)}</span>
               </div>
-              <div className="flex justify-between"><span>Pagamento:</span> <span className="uppercase">{showReceiptModal.formaPagamento}</span></div>
+              <div className="flex justify-between"><span>Pagamento:</span> <span className="uppercase">{showReceiptModal.formaPagamento === 'credito' ? 'FIADO' : showReceiptModal.formaPagamento}</span></div>
               {showReceiptModal.formaPagamento === 'dinheiro' && (
                 <>
                   <div className="flex justify-between"><span>Recebido:</span> <span>{formatCurrency(showReceiptModal.valorRecebido)}</span></div>
