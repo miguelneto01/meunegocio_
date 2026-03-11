@@ -44,7 +44,7 @@ export default function Gastos() {
     }
   };
 
-  const filtered = gastos.filter(g => (g.descricao || '').toLowerCase().includes(busca.toLowerCase()));
+  const filtered = gastos.filter(g => String(g.descricao || '').toLowerCase().includes(busca.toLowerCase()));
   
   const totalEntradas = filtered.filter(g => g.tipo === 'entrada').reduce((acc, g) => acc + g.valor, 0);
   const totalSaidas = filtered.filter(g => g.tipo === 'saida').reduce((acc, g) => acc + g.valor, 0);
@@ -107,7 +107,7 @@ export default function Gastos() {
               {filtered.map(g => (
                 <tr key={g.id} className="hover:bg-slate-50 transition">
                   <td className="p-4 text-slate-600">
-                    {g.data?.toDate ? format(g.data.toDate(), 'dd/MM/yyyy') : new Date(g.data).toLocaleDateString('pt-BR')}
+                    {g.data?.toDate ? format(g.data.toDate(), 'dd/MM/yyyy') : (g.data && !isNaN(new Date(g.data).getTime()) ? new Date(g.data).toLocaleDateString('pt-BR') : 'Desconhecido')}
                   </td>
                   <td className="p-4 font-medium text-slate-800">{g.descricao}</td>
                   <td className="p-4">

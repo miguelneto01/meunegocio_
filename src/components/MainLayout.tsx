@@ -171,7 +171,7 @@ export default function MainLayout() {
         <div className="p-6 mt-auto border-t border-slate-800 bg-slate-900/50">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-emerald-400 font-black shrink-0">
-              {user?.displayName?.charAt(0) || 'U'}
+              {String(user?.displayName || 'U').charAt(0)}
             </div>
             <div className="flex-1 min-w-0 animate-in fade-in slide-in-from-bottom-2">
               <p className="text-sm font-black truncate">{user?.displayName}</p>
@@ -251,7 +251,7 @@ export default function MainLayout() {
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status: Ativo</p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-emerald-600 font-black text-sm">
-                {user?.displayName?.charAt(0) || 'U'}
+                {String(user?.displayName || 'U').charAt(0)}
               </div>
             </div>
           </div>

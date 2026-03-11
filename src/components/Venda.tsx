@@ -101,8 +101,8 @@ export default function Venda() {
       y += 4;
 
       vendaData.itens.forEach((item: any) => {
-        doc.text(item.nome.substring(0, 20), 5, y);
-        doc.text(item.quantidade.toString(), 45, y);
+        doc.text(String(item.nome || '').substring(0, 20), 5, y);
+        doc.text(String(item.quantidade || 0), 45, y);
         doc.text(`R$ ${(item.preco * item.quantidade).toFixed(2)}`, 65, y);
         y += 4;
       });
@@ -114,7 +114,7 @@ export default function Venda() {
       doc.text(`TOTAL: R$ ${vendaData.total.toFixed(2)}`, 5, y);
       y += 5;
       doc.setFontSize(7);
-      doc.text(`Pagamento: ${vendaData.formaPagamento.toUpperCase()}`, 5, y);
+      doc.text(`Pagamento: ${String(vendaData.formaPagamento || '').toUpperCase()}`, 5, y);
       
       if (vendaData.formaPagamento === 'credito') {
         y += 4;
@@ -250,9 +250,9 @@ export default function Venda() {
 
   const produtosFiltrados = buscaProduto.trim() === '' 
     ? [] 
-    : produtos.filter(p => (p.nome || '').toLowerCase().includes(buscaProduto.toLowerCase()));
-  const clientesFiltrados = clientes.filter(c => (c.nome || '').toLowerCase().includes(clienteNome.toLowerCase()));
-  const clienteExiste = clientesFiltrados.some(c => (c.nome || '').toLowerCase() === clienteNome.toLowerCase());
+    : produtos.filter(p => String(p.nome || '').toLowerCase().includes(buscaProduto.toLowerCase()));
+  const clientesFiltrados = clientes.filter(c => String(c.nome || '').toLowerCase().includes(clienteNome.toLowerCase()));
+  const clienteExiste = clientesFiltrados.some(c => String(c.nome || '').toLowerCase() === clienteNome.toLowerCase());
 
   return (
     <div className="flex flex-col lg:grid lg:grid-cols-3 gap-8 h-full pb-20 lg:pb-0">

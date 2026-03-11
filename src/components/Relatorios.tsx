@@ -27,9 +27,14 @@ export default function Relatorios() {
   const [showFecharMesModal, setShowFecharMesModal] = useState(false);
 
   const gerarRelatorio = async () => {
+    if (!dataInicio || !dataFim) return showToast('Preencha as datas', 'warning');
     try {
       const start = new Date(dataInicio + 'T00:00:00');
       const end = new Date(dataFim + 'T23:59:59');
+      
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return showToast('Data inválida', 'error');
+      }
       
       let headers: string[] = [];
       let rows: any[][] = [];
@@ -37,7 +42,7 @@ export default function Relatorios() {
 
       if (tipoRelatorio === 'vendas') {
         const filteredVendas = vendas.filter(v => {
-          const data = v.data?.toDate ? v.data.toDate() : new Date(v.data);
+          const data = v.data?.toDate ? v.data.toDate() : (v.data && !isNaN(new Date(v.data).getTime()) ? new Date(v.data) : new Date(0));
           return data >= start && data <= end;
         });
 
@@ -47,9 +52,9 @@ export default function Relatorios() {
           const val = Number(v.total) || 0;
           totalValue += val;
           rows.push([
-            v.data?.toDate ? format(v.data.toDate(), 'dd/MM/yyyy HH:mm') : new Date(v.data).toLocaleString('pt-BR'),
+            v.data?.toDate ? format(v.data.toDate(), 'dd/MM/yyyy HH:mm') : (v.data && !isNaN(new Date(v.data).getTime()) ? new Date(v.data).toLocaleString('pt-BR') : 'Desconhecido'),
             v.clienteNome,
-            v.formaPagamento === 'credito' ? 'FIADO' : v.formaPagamento.toUpperCase(),
+            v.formaPagamento === 'credito' ? 'FIADO' : String(v.formaPagamento || '').toUpperCase(),
             formatCurrency(val)
           ]);
         });
@@ -68,7 +73,7 @@ export default function Relatorios() {
         });
       } else if (tipoRelatorio === 'gastos') {
         const filteredGastos = gastos.filter(g => {
-          const data = g.data?.toDate ? g.data.toDate() : new Date(g.data);
+          const data = g.data?.toDate ? g.data.toDate() : (g.data && !isNaN(new Date(g.data).getTime()) ? new Date(g.data) : new Date(0));
           return data >= start && data <= end;
         });
 
@@ -82,9 +87,9 @@ export default function Relatorios() {
           else totalSaidas += val;
           
           rows.push([
-            g.data?.toDate ? format(g.data.toDate(), 'dd/MM/yyyy') : new Date(g.data).toLocaleDateString('pt-BR'),
+            g.data?.toDate ? format(g.data.toDate(), 'dd/MM/yyyy') : (g.data && !isNaN(new Date(g.data).getTime()) ? new Date(g.data).toLocaleDateString('pt-BR') : 'Desconhecido'),
             g.descricao,
-            g.tipo.toUpperCase(),
+            g.tipo === 'entrada' ? 'ENTRADA' : String(g.tipo || '').toUpperCase(),
             formatCurrency(val)
           ]);
         });
@@ -104,11 +109,16 @@ export default function Relatorios() {
 
   const exportarPDF = () => {
     if (!reportResult) return showToast('Gere o relatório primeiro', 'warning');
+    if (!dataInicio || !dataFim) return showToast('Preencha as datas', 'warning');
     
     try {
       const doc = new jsPDF();
       const start = new Date(dataInicio + 'T00:00:00');
       const end = new Date(dataFim + 'T23:59:59');
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return showToast('Data inválida', 'error');
+      }
 
       // Header
       doc.setFillColor(16, 185, 129); // Emerald 500
@@ -225,9 +235,9 @@ export default function Relatorios() {
       doc.text('Detalhamento de Vendas', 14, (doc as any).lastAutoTable.finalY + 15);
 
       const rows = vendas.map((v: any) => [
-        v.data?.toDate ? format(v.data.toDate(), 'dd/MM/yyyy HH:mm') : new Date(v.data).toLocaleString('pt-BR'),
+        v.data?.toDate ? format(v.data.toDate(), 'dd/MM/yyyy HH:mm') : (v.data && !isNaN(new Date(v.data).getTime()) ? new Date(v.data).toLocaleString('pt-BR') : 'Desconhecido'),
         v.clienteNome || 'Não informado',
-        v.formaPagamento === 'credito' ? 'FIADO' : v.formaPagamento.toUpperCase(),
+        v.formaPagamento === 'credito' ? 'FIADO' : String(v.formaPagamento || '').toUpperCase(),
         formatCurrency(Number(v.total) || 0)
       ]);
 
@@ -275,7 +285,13 @@ export default function Relatorios() {
   };
 
   const vendasPorDia = vendas.reduce((acc, v) => {
-    const data = v.data?.toDate ? v.data.toDate().toLocaleDateString() : new Date(v.data).toLocaleDateString();
+    let data = 'Desconhecido';
+    if (v.data?.toDate) {
+      data = v.data.toDate().toLocaleDateString();
+    } else if (v.data) {
+      const d = new Date(v.data);
+      if (!isNaN(d.getTime())) data = d.toLocaleDateString();
+    }
     acc[data] = (acc[data] || 0) + (Number(v.total) || 0);
     return acc;
   }, {} as Record<string, number>);

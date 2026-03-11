@@ -70,8 +70,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         const docs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         // Sort in memory to avoid composite index requirement
         docs.sort((a: any, b: any) => {
-          const dateA = a.data?.toDate ? a.data.toDate() : new Date(a.data);
-          const dateB = b.data?.toDate ? b.data.toDate() : new Date(b.data);
+          const dateA = a.data?.toDate ? a.data.toDate() : (a.data && !isNaN(new Date(a.data).getTime()) ? new Date(a.data) : (a.data?.seconds ? new Date(a.data.seconds * 1000) : new Date(0)));
+          const dateB = b.data?.toDate ? b.data.toDate() : (b.data && !isNaN(new Date(b.data).getTime()) ? new Date(b.data) : (b.data?.seconds ? new Date(b.data.seconds * 1000) : new Date(0)));
           return dateB.getTime() - dateA.getTime();
         });
         setVendas(docs);

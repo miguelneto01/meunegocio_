@@ -19,7 +19,7 @@ export default function Credito() {
   const [novasParcelas, setNovasParcelas] = useState('');
 
   const filtered = creditos.filter(c => {
-    const matchNome = (c.clienteNome || '').toLowerCase().includes(busca.toLowerCase());
+    const matchNome = String(c.clienteNome || '').toLowerCase().includes(busca.toLowerCase());
     const matchStatus = apenasPendentes ? c.saldo > 0 : true;
     return matchNome && matchStatus;
   });

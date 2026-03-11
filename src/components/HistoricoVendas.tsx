@@ -15,8 +15,8 @@ export default function HistoricoVendas() {
   const [vendaParaExcluir, setVendaParaExcluir] = useState<any>(null);
 
   const filtered = vendas.filter(v => 
-    (v.clienteNome || '').toLowerCase().includes(busca.toLowerCase()) ||
-    (v.formaPagamento || '').toLowerCase().includes(busca.toLowerCase())
+    String(v.clienteNome || '').toLowerCase().includes(busca.toLowerCase()) ||
+    String(v.formaPagamento || '').toLowerCase().includes(busca.toLowerCase())
   );
 
   const handlePrint = () => {
@@ -81,7 +81,14 @@ export default function HistoricoVendas() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filtered.map(v => {
-                const dataVenda = v.data?.toDate ? v.data.toDate() : new Date(v.data);
+                let dataVenda = new Date(0);
+                if (v.data?.toDate) {
+                  dataVenda = v.data.toDate();
+                } else if (v.data) {
+                  const d = new Date(v.data);
+                  if (!isNaN(d.getTime())) dataVenda = d;
+                  else if (v.data.seconds) dataVenda = new Date(v.data.seconds * 1000);
+                }
                 return (
                   <tr key={v.id} className="hover:bg-slate-50 transition">
                     <td className="p-4 text-slate-600">{format(dataVenda, 'dd/MM/yyyy HH:mm')}</td>
@@ -130,8 +137,8 @@ export default function HistoricoVendas() {
             <div className="space-y-3 mb-6 text-sm text-slate-700">
               <div className="flex items-center gap-2"><User size={16} className="text-slate-400"/> <strong>Vendedor:</strong> {vendaSelecionada.vendedorNome || user?.displayName}</div>
               <div className="flex items-center gap-2"><User size={16} className="text-slate-400"/> <strong>Cliente:</strong> {vendaSelecionada.clienteNome || 'Não informado'}</div>
-              <div className="flex items-center gap-2"><Calendar size={16} className="text-slate-400"/> <strong>Data:</strong> {format(vendaSelecionada.data?.toDate ? vendaSelecionada.data.toDate() : new Date(vendaSelecionada.data), 'dd/MM/yyyy')}</div>
-              <div className="flex items-center gap-2"><Clock size={16} className="text-slate-400"/> <strong>Hora:</strong> {format(vendaSelecionada.data?.toDate ? vendaSelecionada.data.toDate() : new Date(vendaSelecionada.data), 'HH:mm:ss')}</div>
+              <div className="flex items-center gap-2"><Calendar size={16} className="text-slate-400"/> <strong>Data:</strong> {format(vendaSelecionada.data?.toDate ? vendaSelecionada.data.toDate() : (vendaSelecionada.data && !isNaN(new Date(vendaSelecionada.data).getTime()) ? new Date(vendaSelecionada.data) : (vendaSelecionada.data?.seconds ? new Date(vendaSelecionada.data.seconds * 1000) : new Date(0))), 'dd/MM/yyyy')}</div>
+              <div className="flex items-center gap-2"><Clock size={16} className="text-slate-400"/> <strong>Hora:</strong> {format(vendaSelecionada.data?.toDate ? vendaSelecionada.data.toDate() : (vendaSelecionada.data && !isNaN(new Date(vendaSelecionada.data).getTime()) ? new Date(vendaSelecionada.data) : (vendaSelecionada.data?.seconds ? new Date(vendaSelecionada.data.seconds * 1000) : new Date(0))), 'HH:mm:ss')}</div>
               <div className="flex items-center gap-2"><DollarSign size={16} className="text-slate-400"/> <strong>Pagamento:</strong> <span className="uppercase">{vendaSelecionada.formaPagamento === 'credito' ? 'FIADO' : vendaSelecionada.formaPagamento}</span></div>
             </div>
 
