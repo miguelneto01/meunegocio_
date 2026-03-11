@@ -15,8 +15,8 @@ export default function HistoricoVendas() {
   const [vendaParaExcluir, setVendaParaExcluir] = useState<any>(null);
 
   const filtered = vendas.filter(v => 
-    v.clienteNome?.toLowerCase().includes(busca.toLowerCase()) ||
-    v.formaPagamento?.toLowerCase().includes(busca.toLowerCase())
+    (v.clienteNome || '').toLowerCase().includes(busca.toLowerCase()) ||
+    (v.formaPagamento || '').toLowerCase().includes(busca.toLowerCase())
   );
 
   const handlePrint = () => {

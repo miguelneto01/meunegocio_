@@ -250,9 +250,9 @@ export default function Venda() {
 
   const produtosFiltrados = buscaProduto.trim() === '' 
     ? [] 
-    : produtos.filter(p => p.nome.toLowerCase().includes(buscaProduto.toLowerCase()));
-  const clientesFiltrados = clientes.filter(c => c.nome.toLowerCase().includes(clienteNome.toLowerCase()));
-  const clienteExiste = clientesFiltrados.some(c => c.nome.toLowerCase() === clienteNome.toLowerCase());
+    : produtos.filter(p => (p.nome || '').toLowerCase().includes(buscaProduto.toLowerCase()));
+  const clientesFiltrados = clientes.filter(c => (c.nome || '').toLowerCase().includes(clienteNome.toLowerCase()));
+  const clienteExiste = clientesFiltrados.some(c => (c.nome || '').toLowerCase() === clienteNome.toLowerCase());
 
   return (
     <div className="flex flex-col lg:grid lg:grid-cols-3 gap-8 h-full pb-20 lg:pb-0">

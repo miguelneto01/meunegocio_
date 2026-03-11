@@ -44,7 +44,7 @@ export default function Gastos() {
     }
   };
 
-  const filtered = gastos.filter(g => g.descricao.toLowerCase().includes(busca.toLowerCase()));
+  const filtered = gastos.filter(g => (g.descricao || '').toLowerCase().includes(busca.toLowerCase()));
   
   const totalEntradas = filtered.filter(g => g.tipo === 'entrada').reduce((acc, g) => acc + g.valor, 0);
   const totalSaidas = filtered.filter(g => g.tipo === 'saida').reduce((acc, g) => acc + g.valor, 0);

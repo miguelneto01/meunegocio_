@@ -61,7 +61,7 @@ export default function Clientes() {
     }
   };
 
-  const filtered = clientes.filter(c => c.nome.toLowerCase().includes(busca.toLowerCase()));
+  const filtered = clientes.filter(c => (c.nome || '').toLowerCase().includes(busca.toLowerCase()));
 
   return (
     <div className="space-y-6">

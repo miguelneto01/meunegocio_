@@ -48,7 +48,7 @@ export default function Produtos() {
     }
   };
 
-  const filtered = produtos.filter(p => p.nome.toLowerCase().includes(busca.toLowerCase()));
+  const filtered = produtos.filter(p => (p.nome || '').toLowerCase().includes(busca.toLowerCase()));
 
   return (
     <div className="space-y-6">

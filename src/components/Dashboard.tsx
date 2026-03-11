@@ -68,7 +68,7 @@ export default function Dashboard() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl lg:text-4xl font-black text-slate-800 tracking-tight">
-            Olá, <span className="text-emerald-600">{user?.displayName?.split(' ')[0]}</span>! 👋
+            Olá, <span className="text-emerald-600">{(user?.displayName || 'Usuário').split(' ')[0]}</span>! 👋
           </h2>
           <p className="text-slate-500 font-medium mt-1 text-sm lg:text-base">Aqui está o que está acontecendo no seu negócio hoje.</p>
         </div>
@@ -154,12 +154,12 @@ export default function Dashboard() {
               <div key={i} className="flex items-center justify-between group cursor-pointer">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 lg:w-12 lg:h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors font-black text-xs">
-                    {v.clienteNome.charAt(0)}
+                    {(v.clienteNome || 'C').charAt(0)}
                   </div>
                   <div>
-                    <div className="font-black text-slate-800 text-xs lg:text-sm group-hover:text-emerald-600 transition-colors">{v.clienteNome}</div>
+                    <div className="font-black text-slate-800 text-xs lg:text-sm group-hover:text-emerald-600 transition-colors">{v.clienteNome || 'Cliente não informado'}</div>
                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                      {v.data?.toDate ? v.data.toDate().toLocaleDateString() : new Date(v.data).toLocaleDateString()}
+                      {v.data?.toDate ? v.data.toDate().toLocaleDateString() : (v.data ? new Date(v.data).toLocaleDateString() : '')}
                     </div>
                   </div>
                 </div>
