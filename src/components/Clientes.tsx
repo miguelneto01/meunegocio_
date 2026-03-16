@@ -67,7 +67,7 @@ export default function Clientes() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-slate-800">Clientes</h2>
-        <button onClick={() => { setEditId(''); setForm({ nome: '', telefone: '', email: '', cep: '', endereco: '', numero: '', bairro: '', cidade: '' }); setShowModal(true); }} className="bg-indigo-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-indigo-700 transition">
+        <button onClick={() => { setEditId(''); setForm({ nome: '', telefone: '', email: '', cep: '', endereco: '', numero: '', bairro: '', cidade: '' }); setShowModal(true); }} className="bg-slate-600 active:bg-emerald-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition shadow-sm active:shadow-emerald-200">
           <Plus size={20} /> Novo Cliente
         </button>
       </div>
@@ -126,7 +126,7 @@ export default function Clientes() {
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button onClick={() => setShowModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl transition">Cancelar</button>
-              <button onClick={handleSave} className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">Salvar</button>
+              <button onClick={handleSave} className="px-4 py-2 bg-slate-600 active:bg-emerald-600 text-white rounded-xl transition shadow-sm active:shadow-emerald-200">Salvar</button>
             </div>
           </div>
         </div>

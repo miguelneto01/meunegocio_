@@ -71,7 +71,7 @@ export default function Perfil() {
             <label className="block text-sm font-medium text-slate-600 mb-1">Nome de Exibição</label>
             <input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
           </div>
-          <button onClick={handleUpdateProfile} className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-indigo-700 transition flex items-center gap-2">
+          <button onClick={handleUpdateProfile} className="bg-slate-600 active:bg-emerald-600 text-white px-6 py-2 rounded-xl font-medium transition flex items-center gap-2 shadow-sm active:shadow-emerald-200">
             <Save size={18} /> Salvar Alterações
           </button>
         </div>
@@ -94,7 +94,7 @@ export default function Perfil() {
             <label className="block text-sm font-medium text-slate-600 mb-1">Confirmar Nova Senha</label>
             <input type="password" value={confirmarSenha} onChange={e => setConfirmarSenha(e.target.value)} className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
           </div>
-          <button onClick={handleUpdatePassword} className="bg-slate-800 text-white px-6 py-2 rounded-xl font-medium hover:bg-slate-900 transition flex items-center gap-2">
+          <button onClick={handleUpdatePassword} className="bg-slate-600 active:bg-emerald-600 text-white px-6 py-2 rounded-xl font-medium transition flex items-center gap-2 shadow-sm active:shadow-emerald-200">
             <Save size={18} /> Atualizar Senha
           </button>
         </div>

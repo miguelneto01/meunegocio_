@@ -106,7 +106,7 @@ export default function Login() {
             <button 
               type="submit" 
               disabled={isLoading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3.5 rounded-xl transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mt-4"
+              className="w-full bg-slate-600 active:bg-emerald-600 text-white font-semibold py-3.5 rounded-xl transition-all shadow-sm active:shadow-emerald-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mt-4"
             >
               {isLoading ? 'Entrando...' : (
                 <>Entrar <ArrowRight size={18} /></>

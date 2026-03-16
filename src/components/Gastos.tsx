@@ -54,7 +54,7 @@ export default function Gastos() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-slate-800">Fluxo de Caixa (Gastos & Entradas)</h2>
-        <button onClick={() => setShowModal(true)} className="bg-indigo-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-indigo-700 transition shadow-sm font-medium">
+        <button onClick={() => setShowModal(true)} className="bg-slate-600 active:bg-emerald-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition shadow-sm font-medium active:shadow-emerald-200">
           <Plus size={20} /> Novo Lançamento
         </button>
       </div>
@@ -159,7 +159,7 @@ export default function Gastos() {
             </div>
             <div className="mt-8 flex justify-end gap-3">
               <button onClick={() => setShowModal(false)} className="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition font-medium">Cancelar</button>
-              <button onClick={handleSave} className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium shadow-sm">Salvar</button>
+              <button onClick={handleSave} className="px-5 py-2.5 bg-slate-600 active:bg-emerald-600 text-white rounded-xl transition font-medium shadow-sm active:shadow-emerald-200">Salvar</button>
             </div>
           </div>
         </div>

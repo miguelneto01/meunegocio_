@@ -162,7 +162,7 @@ export default function Admin() {
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Nome de Exibição</label>
                 <input type="text" placeholder="Ex: João Silva" value={form.displayName} onChange={e => setForm({...form, displayName: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
               </div>
-              <button onClick={handleCreateUser} className="w-full bg-indigo-600 text-white py-3.5 rounded-xl hover:bg-indigo-700 transition font-semibold shadow-sm mt-2">
+              <button onClick={handleCreateUser} className="w-full bg-slate-600 active:bg-emerald-600 text-white py-3.5 rounded-xl transition font-semibold shadow-sm mt-2 active:shadow-emerald-200">
                 Cadastrar Usuário
               </button>
             </div>
@@ -231,7 +231,7 @@ export default function Admin() {
             </div>
             <div className="mt-8 flex justify-end gap-3">
               <button onClick={() => setShowEditModal(false)} className="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition font-medium">Cancelar</button>
-              <button onClick={handleUpdateUser} className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium shadow-sm">Salvar Alterações</button>
+              <button onClick={handleUpdateUser} className="px-5 py-2.5 bg-slate-600 active:bg-emerald-600 text-white rounded-xl transition font-medium shadow-sm active:shadow-emerald-200">Salvar Alterações</button>
             </div>
           </div>
         </div>

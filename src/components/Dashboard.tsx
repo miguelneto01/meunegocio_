@@ -181,7 +181,7 @@ export default function Dashboard() {
               <div className="text-center py-10 text-slate-400 font-bold">Nenhuma venda registrada.</div>
             )}
           </div>
-          <button className="w-full mt-8 py-4 bg-slate-50 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-emerald-50 hover:text-emerald-600 transition-all">
+          <button className="w-full mt-8 py-4 bg-slate-600 active:bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-sm active:shadow-emerald-100">
             Ver Todo Histórico
           </button>
         </div>

@@ -361,14 +361,14 @@ export default function Relatorios() {
           <div className="flex items-end gap-2">
             <button 
               onClick={gerarRelatorio}
-              className="flex-1 bg-indigo-600 text-white p-4 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all"
+              className="flex-1 bg-slate-600 active:bg-emerald-600 text-white p-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-xl shadow-slate-100 active:shadow-emerald-100"
             >
               <TrendingUp size={20} /> GERAR
             </button>
             {reportResult && (
               <button 
                 onClick={exportarPDF}
-                className="bg-slate-900 text-white p-4 rounded-2xl font-black hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
+                className="bg-slate-600 active:bg-emerald-600 text-white p-4 rounded-2xl font-black transition-all shadow-xl shadow-slate-100 active:shadow-emerald-100"
                 title="Exportar PDF"
               >
                 <Download size={20} />

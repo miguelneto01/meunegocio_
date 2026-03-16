@@ -115,7 +115,7 @@ export default function DesktopLayout() {
               className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 group relative ${
                 activeTab === item.id 
                   ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-900/50' 
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
               } ${!isSidebarOpen && 'justify-center'}`}
               title={!isSidebarOpen ? item.label : ''}
             >

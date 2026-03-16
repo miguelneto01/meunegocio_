@@ -59,7 +59,7 @@ export default function MobileLayout() {
   const navItems = [
     { id: 'dashboard', label: 'Início', icon: Home },
     { id: 'produtos', label: 'Estoque', icon: Package },
-    { id: 'venda', label: 'Venda', icon: ShoppingCart, primary: true },
+    { id: 'venda', label: 'Venda', icon: ShoppingCart },
     { id: 'clientes', label: 'Clientes', icon: Users },
     { id: 'perfil', label: 'Perfil', icon: UserCircle },
   ];
@@ -179,16 +179,14 @@ export default function MobileLayout() {
             onClick={() => setActiveTab(item.id)}
             className={`flex flex-col items-center gap-1 transition-all relative ${
               activeTab === item.id ? 'text-emerald-600' : 'text-slate-400'
-            } ${item.primary ? 'mb-8' : ''}`}
+            }`}
           >
             <div className={`p-2.5 rounded-2xl transition-all ${
-              item.primary 
-                ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-200 scale-125 -translate-y-2' 
-                : activeTab === item.id ? 'bg-emerald-50' : ''
+              activeTab === item.id ? 'bg-emerald-50' : ''
             }`}>
-              <item.icon size={item.primary ? 24 : 20} />
+              <item.icon size={20} />
             </div>
-            {!item.primary && <span className="text-[9px] font-black uppercase tracking-wider">{item.label}</span>}
+            <span className="text-[9px] font-black uppercase tracking-wider">{item.label}</span>
           </button>
         ))}
         <button

@@ -321,7 +321,7 @@ export default function Venda() {
                 <div className="text-2xl font-black text-emerald-600 mb-6">R$ {p.preco.toFixed(2)}</div>
                 <button 
                   onClick={() => adicionarAoCarrinho(p)} 
-                  className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-lg shadow-slate-200 hover:shadow-emerald-200"
+                  className="w-full bg-slate-600 active:bg-emerald-600 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-slate-200 active:shadow-emerald-200"
                 >
                   <Plus size={20} /> Adicionar
                 </button>
@@ -500,7 +500,7 @@ export default function Venda() {
               <button 
                 onClick={finalizarVenda} 
                 disabled={isFinalizing || carrinho.length === 0}
-                className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-5 rounded-2xl font-black flex items-center justify-center gap-3 transition-all shadow-2xl shadow-emerald-900/50"
+                className="w-full sm:w-auto bg-slate-600 active:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-5 rounded-2xl font-black flex items-center justify-center gap-3 transition-all shadow-2xl shadow-slate-900/50 active:shadow-emerald-900/50"
               >
                 {isFinalizing ? '...' : <><Check size={24} /> FINALIZAR</>}
               </button>
@@ -633,7 +633,7 @@ export default function Venda() {
               </button>
               <button 
                 onClick={handleCreateClient} 
-                className="flex-1 px-6 py-5 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 shadow-xl shadow-emerald-100 transition-all"
+                className="flex-1 px-6 py-5 bg-slate-600 active:bg-emerald-600 text-white font-black rounded-2xl shadow-xl shadow-slate-100 active:shadow-emerald-100 transition-all"
               >
                 CADASTRAR
               </button>

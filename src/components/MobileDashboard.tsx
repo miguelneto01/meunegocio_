@@ -12,10 +12,10 @@ export default function MobileDashboard({ onNavigate }: { onNavigate: (tab: stri
   const lucro = totalVendas - totalGastos;
 
   const quickActions = [
-    { id: 'venda', label: 'Nova Venda', icon: <ShoppingCart size={24} />, color: 'bg-emerald-600' },
-    { id: 'produtos', label: 'Estoque', icon: <Package size={24} />, color: 'bg-blue-600' },
-    { id: 'clientes', label: 'Clientes', icon: <Users size={24} />, color: 'bg-amber-600' },
-    { id: 'historico', label: 'Histórico', icon: <History size={24} />, color: 'bg-slate-800' },
+    { id: 'venda', label: 'Nova Venda', icon: <ShoppingCart size={24} />, color: 'bg-slate-600 active:bg-emerald-600' },
+    { id: 'produtos', label: 'Estoque', icon: <Package size={24} />, color: 'bg-slate-600 active:bg-emerald-600' },
+    { id: 'clientes', label: 'Clientes', icon: <Users size={24} />, color: 'bg-slate-600 active:bg-emerald-600' },
+    { id: 'historico', label: 'Histórico', icon: <History size={24} />, color: 'bg-slate-600 active:bg-emerald-600' },
   ];
 
   return (
@@ -100,7 +100,7 @@ export default function MobileDashboard({ onNavigate }: { onNavigate: (tab: stri
       {/* Quick Add Button */}
       <button 
         onClick={() => onNavigate('venda')}
-        className="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black flex items-center justify-center gap-3 shadow-xl shadow-emerald-200 active:scale-95 transition-all"
+        className="w-full bg-slate-600 active:bg-emerald-600 text-white py-5 rounded-2xl font-black flex items-center justify-center gap-3 shadow-xl shadow-slate-200 active:shadow-emerald-200 active:scale-95 transition-all"
       >
         <Plus size={24} />
         NOVA VENDA AGORA
