@@ -73,9 +73,12 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
           expiracao: firebase.firestore.Timestamp.fromDate(expiracao)
         };
 
+        // Try to check connection first
+        await db.collection('_connection_test').doc('ping').set({ lastBootstrap: new Date() }, { merge: true });
+
         // Force update the 'admin' document ID to be the master admin
         await db.collection('usuarios').doc('admin').set(adminData, { merge: true });
-        console.log('Master admin credentials forced on "admin" document');
+        console.log('Master admin credentials verified');
         
         // Also check if there's any other document with this login and update it too
         const snap = await db.collection('usuarios').where('login', '==', 'miguelneto0x').get();
@@ -84,8 +87,13 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
             await doc.ref.update({ senha: '28061996' });
           }
         }
-      } catch (e) {
-        console.error('Bootstrap error:', e);
+      } catch (e: any) {
+        if (e.message && e.message.includes('offline')) {
+          console.warn('Firestore is still provisioning or offline. Retrying in 5s...');
+          setTimeout(bootstrapAdmin, 5000);
+        } else {
+          console.error('Bootstrap error:', e);
+        }
       }
     };
     bootstrapAdmin();

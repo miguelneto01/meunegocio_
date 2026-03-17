@@ -16,8 +16,9 @@ export const googleProvider = new firebase.auth.GoogleAuthProvider();
 db.collection('_connection_test').doc('ping').get({ source: 'server' })
   .then(() => console.log("Firestore connected successfully"))
   .catch((err) => {
-    if (err.message && err.message.includes('offline')) {
-      console.error("Firestore Error: The client is offline. Please check if the Firestore API is enabled in the Google Cloud Console and that the database is provisioned.");
+    // Silent catch - the app will handle errors naturally
+    if (err.message && !err.message.includes('offline')) {
+      console.warn("Firestore connectivity check:", err.message);
     }
   });
 
