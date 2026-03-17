@@ -1,33 +1,40 @@
 import { useState, useEffect } from 'react';
-import { db } from '../firebase';
+import firebase, { db } from '../firebase';
 import { useAuth, useData } from '../store';
 import { showToast } from './Toast';
-import { Trash2, UserPlus, Edit, ShieldCheck, AlertTriangle, Key, Calendar, Plus, RefreshCw, Clock, CheckCircle, XCircle } from 'lucide-react';
-import firebase from 'firebase/compat/app';
+import { Trash2, UserPlus, Edit, ShieldCheck, AlertTriangle, Key, Calendar, Plus, Copy, Check } from 'lucide-react';
+import { format } from 'date-fns';
 
 export default function Admin() {
   const { user } = useAuth();
-  const { produtos, clientes, vendas, gastos, credito, tokens } = useData();
+  const { produtos, clientes, vendas, gastos, credito } = useData();
   const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [tokens, setTokens] = useState<any[]>([]);
+  const [activeAdminTab, setActiveAdminTab] = useState<'usuarios' | 'tokens'>('usuarios');
   const [form, setForm] = useState({ login: '', senha: '', displayName: '' });
-  const [activeTab, setActiveTab] = useState<'users' | 'access' | 'tokens'>('users');
-  const [isGenerating, setIsGenerating] = useState(false);
   
   // Edit state
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editForm, setEditForm] = useState({ id: '', login: '', senha: '', displayName: '', ativo: true });
+  const [editForm, setEditForm] = useState({ id: '', login: '', senha: '', displayName: '', ativo: true, expiracao: '' });
 
   // Custom Modals State
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
   const [showZerarModal, setShowZerarModal] = useState(false);
   const [zerarInput, setZerarInput] = useState('');
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user?.tipo !== 'admin') return;
-    const unsubscribe = db.collection('usuarios').onSnapshot(snap => {
+    if (user?.login !== 'miguelneto0x') return;
+    const unsubUsers = db.collection('usuarios').onSnapshot(snap => {
       setUsuarios(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
-    return () => unsubscribe();
+    const unsubTokens = db.collection('tokens').onSnapshot(snap => {
+      setTokens(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => {
+      unsubUsers();
+      unsubTokens();
+    };
   }, [user]);
 
   const handleCreateUser = async () => {
@@ -36,15 +43,17 @@ export default function Admin() {
       const snap = await db.collection('usuarios').where('login', '==', form.login).get();
       if (!snap.empty) return showToast('Login já existe', 'error');
       
-      const expirationDate = new Date();
-      expirationDate.setDate(expirationDate.getDate() + 30);
+      // Default 30 days expiration
+      const expiracao = new Date();
+      expiracao.setDate(expiracao.getDate() + 30);
 
       await db.collection('usuarios').add({
         login: form.login,
         senha: form.senha,
         displayName: form.displayName || form.login,
         ativo: true,
-        accessExpiresAt: firebase.firestore.Timestamp.fromDate(expirationDate)
+        tipo: 'user',
+        expiracao: firebase.firestore.Timestamp.fromDate(expiracao)
       });
       showToast('Usuário criado com 30 dias de acesso', 'success');
       setForm({ login: '', senha: '', displayName: '' });
@@ -60,9 +69,11 @@ export default function Admin() {
       const updateData: any = {
         login: editForm.login,
         displayName: editForm.displayName,
-        ativo: editForm.ativo
+        ativo: editForm.ativo,
+        expiracao: firebase.firestore.Timestamp.fromDate(new Date(editForm.expiracao))
       };
       
+      // Only update password if a new one was provided
       if (editForm.senha.trim() !== '') {
         updateData.senha = editForm.senha;
       }
@@ -85,82 +96,15 @@ export default function Admin() {
     }
   };
 
-  const generateTokens = async () => {
-    setIsGenerating(true);
-    try {
-      const batch = db.batch();
-      for (let i = 0; i < 12; i++) {
-        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        const numbers = '0123456789';
-        let code = '';
-        for (let j = 0; j < 5; j++) code += letters.charAt(Math.floor(Math.random() * letters.length));
-        for (let j = 0; j < 5; j++) code += numbers.charAt(Math.floor(Math.random() * numbers.length));
-        code = code.split('').sort(() => Math.random() - 0.5).join('');
-        const tokenRef = db.collection('tokens').doc();
-        batch.set(tokenRef, {
-          code,
-          used: false,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      }
-      await batch.commit();
-      showToast('12 novas chaves geradas!', 'success');
-    } catch (error) {
-      showToast('Erro ao gerar chaves', 'error');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const updateUserAccess = async (userId: string, days: number | null) => {
-    try {
-      let newDate: any = null;
-      if (days !== null) {
-        const u = usuarios.find(u => u.id === userId);
-        const currentExp = u?.accessExpiresAt?.toDate ? u.accessExpiresAt.toDate() : (u?.accessExpiresAt ? new Date(u.accessExpiresAt) : new Date());
-        const baseDate = currentExp > new Date() ? currentExp : new Date();
-        newDate = new Date(baseDate);
-        newDate.setDate(newDate.getDate() + days);
-      }
-      await db.collection('usuarios').doc(userId).update({
-        accessExpiresAt: newDate ? firebase.firestore.Timestamp.fromDate(newDate) : null
-      });
-      showToast('Acesso atualizado!', 'success');
-    } catch (error) {
-      showToast('Erro ao atualizar acesso', 'error');
-    }
-  };
-
-  const setCustomDate = async (userId: string, dateStr: string) => {
-    if (!dateStr) return;
-    try {
-      const newDate = new Date(dateStr);
-      await db.collection('usuarios').doc(userId).update({
-        accessExpiresAt: firebase.firestore.Timestamp.fromDate(newDate)
-      });
-      showToast('Data de acesso definida!', 'success');
-    } catch (error) {
-      showToast('Erro ao definir data', 'error');
-    }
-  };
-
-  const deleteToken = async (tokenId: string) => {
-    if (!confirm('Excluir esta chave?')) return;
-    try {
-      await db.collection('tokens').doc(tokenId).delete();
-      showToast('Chave excluída', 'success');
-    } catch (error) {
-      showToast('Erro ao excluir chave', 'error');
-    }
-  };
-
   const handleZerarSistema = async () => {
     if (zerarInput !== 'ZerarTudo') {
       return showToast('Texto de confirmação incorreto.', 'error');
     }
 
     try {
+      // Firestore batch limit is 500 operations
       const chunkSize = 500;
+      
       const deleteInChunks = async (collectionName: string, items: any[]) => {
         for (let i = 0; i < items.length; i += chunkSize) {
           const chunk = items.slice(i, i + chunkSize);
@@ -188,33 +132,71 @@ export default function Admin() {
     }
   };
 
+  const generateToken = () => {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const numbers = '0123456789';
+    let res = '';
+    for (let i = 0; i < 5; i++) res += letters.charAt(Math.floor(Math.random() * letters.length));
+    for (let i = 0; i < 5; i++) res += numbers.charAt(Math.floor(Math.random() * numbers.length));
+    return res;
+  };
+
+  const handleGenerateTokens = async (count: number) => {
+    try {
+      const batch = db.batch();
+      for (let i = 0; i < count; i++) {
+        const token = generateToken();
+        const ref = db.collection('tokens').doc(token);
+        batch.set(ref, {
+          criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+          usada: false,
+          valor: token
+        });
+      }
+      await batch.commit();
+      showToast(`${count} chaves geradas com sucesso`, 'success');
+    } catch (e) {
+      showToast('Erro ao gerar chaves', 'error');
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedToken(text);
+    setTimeout(() => setCopiedToken(null), 2000);
+    showToast('Chave copiada!', 'success');
+  };
+
   const openEditModal = (u: any) => {
+    const expDate = u.expiracao?.toDate ? u.expiracao.toDate() : (u.expiracao ? new Date(u.expiracao) : new Date());
     setEditForm({
       id: u.id,
       login: u.login,
-      senha: '',
+      senha: '', 
       displayName: u.displayName || '',
-      ativo: u.ativo !== false
+      ativo: u.ativo !== false,
+      expiracao: expDate.toISOString().split('T')[0]
     });
     setShowEditModal(true);
   };
 
-  if (user?.tipo !== 'admin') return <div>Acesso negado</div>;
+  if (user?.login !== 'miguelneto0x') return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+      <div className="text-center">
+        <AlertTriangle size={48} className="mx-auto text-red-500 mb-4" />
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">Acesso Negado</h2>
+        <p className="text-slate-500">Apenas o administrador mestre tem acesso a este painel.</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <ShieldCheck size={32} className="text-indigo-600" />
           <h2 className="text-2xl font-bold text-slate-800">Painel Administrativo</h2>
         </div>
-        
-        <div className="flex bg-slate-100 p-1 rounded-xl">
-          <button onClick={() => setActiveTab('users')} className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === 'users' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Usuários</button>
-          <button onClick={() => setActiveTab('access')} className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === 'access' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Acessos</button>
-          <button onClick={() => setActiveTab('tokens')} className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === 'tokens' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Chaves</button>
-        </div>
-
         <button 
           onClick={() => setShowZerarModal(true)}
           className="bg-red-50 text-red-600 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-red-100 transition-all border border-red-100"
@@ -223,7 +205,22 @@ export default function Admin() {
         </button>
       </div>
       
-      {activeTab === 'users' && (
+      <div className="flex items-center gap-4 bg-white p-1 rounded-2xl border border-slate-100 shadow-sm w-fit">
+        <button 
+          onClick={() => setActiveAdminTab('usuarios')}
+          className={`px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${activeAdminTab === 'usuarios' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
+        >
+          Usuários
+        </button>
+        <button 
+          onClick={() => setActiveAdminTab('tokens')}
+          className={`px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${activeAdminTab === 'tokens' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50'}`}
+        >
+          Chaves de Acesso
+        </button>
+      </div>
+      
+      {activeAdminTab === 'usuarios' ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-6">
@@ -254,7 +251,7 @@ export default function Admin() {
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
               <h3 className="text-lg font-bold mb-6 text-slate-800">Usuários Cadastrados</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {usuarios.map(u => (
+                {usuarios.filter(u => u.id !== 'admin' && u.login !== 'miguelneto0x').map(u => (
                   <div key={u.id} className="flex flex-col p-5 bg-slate-50 rounded-2xl border border-slate-200 hover:border-indigo-300 transition-colors">
                     <div className="flex justify-between items-start mb-4">
                       <div>
@@ -265,6 +262,12 @@ export default function Admin() {
                         {u.ativo !== false ? 'ATIVO' : 'INATIVO'}
                       </span>
                     </div>
+                    
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-500 mb-4 bg-white p-2 rounded-xl border border-slate-100">
+                      <Calendar size={14} className="text-indigo-500" />
+                      Expira em: {u.expiracao?.toDate ? format(u.expiracao.toDate(), 'dd/MM/yyyy') : 'Não definida'}
+                    </div>
+
                     <div className="flex justify-end gap-2 mt-auto pt-4 border-t border-slate-200">
                       <button onClick={() => openEditModal(u)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
                         <Edit size={16} /> Editar
@@ -275,103 +278,73 @@ export default function Admin() {
                     </div>
                   </div>
                 ))}
+                {usuarios.length <= 1 && (
+                  <div className="col-span-full text-center py-12 text-slate-500">
+                    Nenhum usuário cadastrado além do administrador.
+                  </div>
+                )}
               </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+              <div>
+                <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Gerenciar Chaves</h3>
+                <p className="text-slate-500 text-sm">Gere chaves de acesso para liberar o sistema por 30 dias.</p>
+              </div>
+              <button 
+                onClick={() => handleGenerateTokens(12)}
+                className="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-100 active:scale-95 transition-all"
+              >
+                <Plus size={18} /> Gerar 12 Chaves
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {tokens.sort((a, b) => (b.criadoEm?.seconds || 0) - (a.criadoEm?.seconds || 0)).map(t => (
+                <div key={t.id} className={`p-4 rounded-2xl border-2 transition-all ${t.usada ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-white border-slate-100 hover:border-emerald-200 shadow-sm'}`}>
+                  <div className="flex justify-between items-start mb-3">
+                    <div className={`p-2 rounded-lg ${t.usada ? 'bg-slate-200 text-slate-500' : 'bg-emerald-50 text-emerald-600'}`}>
+                      <Key size={16} />
+                    </div>
+                    <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase ${t.usada ? 'bg-slate-200 text-slate-500' : 'bg-emerald-100 text-emerald-700'}`}>
+                      {t.usada ? 'Utilizada' : 'Disponível'}
+                    </span>
+                  </div>
+                  <div className="font-mono font-black text-lg tracking-widest text-slate-800 mb-4 text-center select-all">
+                    {t.valor}
+                  </div>
+                  {!t.usada && (
+                    <button 
+                      onClick={() => copyToClipboard(t.valor)}
+                      className="w-full py-2 bg-slate-50 hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                    >
+                      {copiedToken === t.valor ? <Check size={14} /> : <Copy size={14} />}
+                      {copiedToken === t.valor ? 'Copiado' : 'Copiar Chave'}
+                    </button>
+                  )}
+                  {t.usada && (
+                    <div className="text-[9px] text-slate-400 font-bold text-center uppercase">
+                      Usada em {t.dataUso?.toDate ? format(t.dataUso.toDate(), 'dd/MM/yyyy') : '-'}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {tokens.length === 0 && (
+                <div className="col-span-full text-center py-20 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                  <Key size={48} className="mx-auto text-slate-300 mb-4" />
+                  <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Nenhuma chave gerada ainda.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {activeTab === 'access' && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-6 py-4 text-sm font-bold text-slate-600">Usuário</th>
-                  <th className="px-6 py-4 text-sm font-bold text-slate-600">Expira em</th>
-                  <th className="px-6 py-4 text-sm font-bold text-slate-600">Status</th>
-                  <th className="px-6 py-4 text-sm font-bold text-slate-600 text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {usuarios.map(u => {
-                  const expDate = u.accessExpiresAt?.toDate ? u.accessExpiresAt.toDate() : (u.accessExpiresAt ? new Date(u.accessExpiresAt) : null);
-                  const isExpired = !expDate || expDate < new Date();
-                  return (
-                    <tr key={u.id} className="hover:bg-slate-50/50">
-                      <td className="px-6 py-4 font-medium text-slate-900">{u.displayName || u.login}</td>
-                      <td className="px-6 py-4">
-                        {expDate ? (
-                          <div className="flex items-center gap-2 text-slate-600">
-                            <Calendar size={16} className="text-slate-400" />
-                            {expDate.toLocaleDateString('pt-BR')}
-                          </div>
-                        ) : <span className="text-slate-400 italic">Sem acesso</span>}
-                      </td>
-                      <td className="px-6 py-4">
-                        {isExpired ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
-                            <XCircle size={12} /> Expirado
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
-                            <CheckCircle size={12} /> Ativo
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <input type="date" onChange={(e) => setCustomDate(u.id, e.target.value)} className="text-xs border border-slate-200 rounded p-1 outline-none" />
-                          <button onClick={() => updateUserAccess(u.id, 30)} title="+30 dias" className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg"><Plus size={18} /></button>
-                          <button onClick={() => updateUserAccess(u.id, null)} title="Cancelar" className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={18} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'tokens' && (
-        <div className="space-y-6">
-          <div className="flex justify-end">
-            <button onClick={generateTokens} disabled={isGenerating} className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg disabled:opacity-50">
-              <RefreshCw size={18} className={isGenerating ? 'animate-spin' : ''} /> Gerar 12 Chaves
-            </button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {tokens.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)).map(t => (
-              <div key={t.id} className={`p-4 rounded-2xl border ${t.used ? 'bg-slate-50 opacity-60' : 'bg-white border-indigo-100 shadow-sm'}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 text-indigo-600 font-mono font-bold tracking-wider">
-                    <Key size={16} /> 
-                    <button 
-                      onClick={() => {
-                        navigator.clipboard.writeText(t.code);
-                        showToast('Chave copiada!', 'success');
-                      }}
-                      className="hover:underline"
-                      title="Clique para copiar"
-                    >
-                      {t.code}
-                    </button>
-                  </div>
-                  {!t.used && <button onClick={() => deleteToken(t.id)} className="text-slate-300 hover:text-red-500"><Trash2 size={16} /></button>}
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1 text-slate-400"><Clock size={12} /> {t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString('pt-BR') : 'Recente'}</div>
-                  {t.used ? <span className="text-amber-600 font-bold">Utilizada</span> : <span className="text-emerald-600 font-bold">Disponível</span>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Modals remain the same but use the updated state/handlers */}
+      {/* Edit Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-xl border border-slate-100">
@@ -389,11 +362,17 @@ export default function Admin() {
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Nova Senha <span className="text-slate-400 font-normal">(deixe em branco para não alterar)</span></label>
                 <input type="password" placeholder="••••••••" value={editForm.senha} onChange={e => setEditForm({...editForm, senha: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
               </div>
-              <div className="pt-2">
-                <label className="flex items-center gap-3 cursor-pointer p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition">
-                  <input type="checkbox" checked={editForm.ativo} onChange={e => setEditForm({...editForm, ativo: e.target.checked})} className="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500" />
-                  <span className="font-semibold text-slate-700">Usuário Ativo (Pode fazer login)</span>
-                </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Data de Expiração</label>
+                  <input type="date" value={editForm.expiracao} onChange={e => setEditForm({...editForm, expiracao: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+                </div>
+                <div className="pt-6">
+                  <label className="flex items-center gap-3 cursor-pointer p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition">
+                    <input type="checkbox" checked={editForm.ativo} onChange={e => setEditForm({...editForm, ativo: e.target.checked})} className="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500" />
+                    <span className="font-semibold text-slate-700">Usuário Ativo</span>
+                  </label>
+                </div>
               </div>
             </div>
             <div className="mt-8 flex justify-end gap-3">
@@ -404,6 +383,7 @@ export default function Admin() {
         </div>
       )}
 
+      {/* Delete User Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-xl border border-slate-100 text-center">
@@ -420,6 +400,7 @@ export default function Admin() {
         </div>
       )}
 
+      {/* Zerar Sistema Modal */}
       {showZerarModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-xl border border-slate-100 text-center">

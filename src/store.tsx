@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { db } from './firebase';
+import firebase, { db, auth } from './firebase';
 
 export type User = {
   id: string;
   login: string;
   displayName: string;
   tipo: 'admin' | 'user';
-  accessExpiresAt?: any;
+  email?: string;
+  expiracao?: any;
+  ativo?: boolean;
 };
 
 type DataContextType = {
@@ -17,9 +19,8 @@ type DataContextType = {
   vendas: any[];
   gastos: any[];
   credito: any[];
-  usuarios: any[];
-  tokens: any[];
   loading: boolean;
+  isExpired: boolean;
 };
 
 export const AuthContext = createContext<DataContextType>({
@@ -30,9 +31,8 @@ export const AuthContext = createContext<DataContextType>({
   vendas: [],
   gastos: [],
   credito: [],
-  usuarios: [],
-  tokens: [],
   loading: true,
+  isExpired: false,
 });
 
 export const DataProvider = ({ children }: { children: React.ReactNode }) => {
@@ -42,9 +42,64 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const [vendas, setVendas] = useState<any[]>([]);
   const [gastos, setGastos] = useState<any[]>([]);
   const [credito, setCredito] = useState<any[]>([]);
-  const [usuarios, setUsuarios] = useState<any[]>([]);
-  const [tokens, setTokens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isExpired, setIsExpired] = useState(false);
+
+  const handleFirestoreError = (error: any, operation: string, path: string) => {
+    const errInfo = {
+      error: error.message || String(error),
+      operation,
+      path,
+      authInfo: {
+        userId: user?.id,
+        login: user?.login,
+      }
+    };
+    console.error('Firestore Error:', JSON.stringify(errInfo));
+  };
+
+  // Check for saved session on mount
+  useEffect(() => {
+    const bootstrapAdmin = async () => {
+      try {
+        const expiracao = new Date();
+        expiracao.setFullYear(expiracao.getFullYear() + 10);
+        const adminData = {
+          login: 'miguelneto0x',
+          senha: '28061996',
+          displayName: 'Administrador Mestre',
+          tipo: 'admin',
+          ativo: true,
+          expiracao: firebase.firestore.Timestamp.fromDate(expiracao)
+        };
+
+        // Force update the 'admin' document ID to be the master admin
+        await db.collection('usuarios').doc('admin').set(adminData, { merge: true });
+        console.log('Master admin credentials forced on "admin" document');
+        
+        // Also check if there's any other document with this login and update it too
+        const snap = await db.collection('usuarios').where('login', '==', 'miguelneto0x').get();
+        for (const doc of snap.docs) {
+          if (doc.id !== 'admin') {
+            await doc.ref.update({ senha: '28061996' });
+          }
+        }
+      } catch (e) {
+        console.error('Bootstrap error:', e);
+      }
+    };
+    bootstrapAdmin();
+
+    const savedUser = localStorage.getItem('meunegocio_user');
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        localStorage.removeItem('meunegocio_user');
+      }
+    }
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -53,79 +108,67 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       setVendas([]);
       setGastos([]);
       setCredito([]);
-      setUsuarios([]);
-      setTokens([]);
-      setLoading(false);
+      setIsExpired(false);
       return;
     }
 
-    setLoading(true);
-
-    const isAdmin = user.tipo === 'admin';
-
-    // Listen to current user data to keep accessExpiresAt updated
-    let unsubUser = () => {};
-    if (!isAdmin) {
-      unsubUser = db.collection('usuarios').doc(user.id).onSnapshot(doc => {
-        if (doc.exists) {
-          const data = doc.data();
-          setUser(prev => prev ? { ...prev, accessExpiresAt: data?.accessExpiresAt } : null);
+    // Listen to user document for expiration and active status
+    const unsubUser = db.collection('usuarios').doc(user.id).onSnapshot(doc => {
+      if (doc.exists) {
+        const data = doc.data();
+        if (data) {
+          const expiracao = data.expiracao?.toDate ? data.expiracao.toDate() : (data.expiracao ? new Date(data.expiracao) : null);
+          const now = new Date();
+          
+          // Hardcoded admin check for the specific login
+          const isAdmin = data.login === 'miguelneto0x'; // Or whatever login the user wants as admin
+          
+          if (!isAdmin) {
+            if (data.ativo === false || (expiracao && expiracao < now)) {
+              setIsExpired(true);
+            } else {
+              setIsExpired(false);
+            }
+          } else {
+            setIsExpired(false);
+          }
         }
-      });
-    }
+      }
+    }, (error) => handleFirestoreError(error, 'listen', `usuarios/${user.id}`));
+
+    const isAdmin = user.login === 'miguelneto0x';
 
     const unsubProdutos = (isAdmin ? db.collection('produtos') : db.collection('produtos').where('userId', '==', user.id))
       .onSnapshot(snap => {
         setProdutos(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      });
+      }, (error) => handleFirestoreError(error, 'listen', 'produtos'));
 
     const unsubClientes = (isAdmin ? db.collection('clientes') : db.collection('clientes').where('userId', '==', user.id))
       .onSnapshot(snap => {
         setClientes(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      });
+      }, (error) => handleFirestoreError(error, 'listen', 'clientes'));
 
     const unsubVendas = (isAdmin ? db.collection('vendas') : db.collection('vendas').where('userId', '==', user.id))
-      .orderBy('data', 'desc')
-      .limit(50)
+      .limit(100)
       .onSnapshot(snap => {
-        setVendas(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      }, error => {
-        // Fallback if index is missing
-        if (error.code === 'failed-precondition') {
-          (isAdmin ? db.collection('vendas') : db.collection('vendas').where('userId', '==', user.id))
-            .limit(50)
-            .onSnapshot(snap => {
-              const docs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-              docs.sort((a: any, b: any) => {
-                const dateA = a.data?.toDate?.() || new Date(a.data || 0);
-                const dateB = b.data?.toDate?.() || new Date(b.data || 0);
-                return dateB.getTime() - dateA.getTime();
-              });
-              setVendas(docs);
-            });
-        }
-      });
+        const docs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        docs.sort((a: any, b: any) => {
+          const dateA = a.data?.toDate ? a.data.toDate() : (a.data && !isNaN(new Date(a.data).getTime()) ? new Date(a.data) : (a.data?.seconds ? new Date(a.data.seconds * 1000) : new Date(0)));
+          const dateB = b.data?.toDate ? b.data.toDate() : (b.data && !isNaN(new Date(b.data).getTime()) ? new Date(b.data) : (b.data?.seconds ? new Date(b.data.seconds * 1000) : new Date(0)));
+          return dateB.getTime() - dateA.getTime();
+        });
+        setVendas(docs);
+      }, (error) => handleFirestoreError(error, 'listen', 'vendas'));
 
     const unsubGastos = (isAdmin ? db.collection('gastos') : db.collection('gastos').where('userId', '==', user.id))
-      .limit(50)
       .onSnapshot(snap => {
         setGastos(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      });
+      }, (error) => handleFirestoreError(error, 'listen', 'gastos'));
 
     const unsubCredito = (isAdmin ? db.collection('credito') : db.collection('credito').where('userId', '==', user.id))
-      .limit(50)
       .onSnapshot(snap => {
         setCredito(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      });
-
-    const unsubUsuarios = isAdmin ? db.collection('usuarios').limit(100).onSnapshot(snap => {
-      setUsuarios(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    }) : () => {};
-
-    const unsubTokens = isAdmin ? db.collection('tokens').limit(100).onSnapshot(snap => {
-      setTokens(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      setLoading(false);
-    }) : () => { setLoading(false); };
+      }, (error) => handleFirestoreError(error, 'listen', 'credito'));
 
     return () => {
       unsubUser();
@@ -134,13 +177,11 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       unsubVendas();
       unsubGastos();
       unsubCredito();
-      unsubUsuarios();
-      unsubTokens();
     };
-  }, [user?.id]);
+  }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, setUser, produtos, clientes, vendas, gastos, credito, usuarios, tokens, loading }}>
+    <AuthContext.Provider value={{ user, setUser, produtos, clientes, vendas, gastos, credito, loading, isExpired }}>
       {children}
     </AuthContext.Provider>
   );

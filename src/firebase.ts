@@ -9,10 +9,6 @@ if (!firebase.apps.length) {
 
 // @ts-ignore
 export const db = firebase.app().firestore(firebaseConfig.firestoreDatabaseId);
-
-// Force long polling to avoid WebSocket issues in iframes
-db.settings({ experimentalForceLongPolling: true });
-
 export const auth = firebase.auth();
 export const googleProvider = new firebase.auth.GoogleAuthProvider();
 
@@ -20,7 +16,7 @@ export const googleProvider = new firebase.auth.GoogleAuthProvider();
 db.collection('_connection_test').doc('ping').get({ source: 'server' })
   .then(() => console.log("Firestore connected successfully"))
   .catch((err) => {
-    if (err.message.includes('offline')) {
+    if (err.message && err.message.includes('offline')) {
       console.error("Firestore Error: The client is offline. Please check if the Firestore API is enabled in the Google Cloud Console and that the database is provisioned.");
     }
   });
