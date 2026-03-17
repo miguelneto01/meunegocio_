@@ -50,7 +50,7 @@ export default function Produtos() {
     }
   };
 
-  const filtered = produtos.filter(p => String(p.nome || '').toLowerCase().includes(busca.toLowerCase()));
+  const filtered = (produtos || []).filter(p => String(p.nome || '').toLowerCase().includes(busca.toLowerCase()));
 
   return (
     <div className="space-y-6">

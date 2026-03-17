@@ -9,12 +9,12 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { vendas, produtos, clientes, gastos } = useData();
 
-  const totalVendas = vendas.reduce((acc, v) => acc + (Number(v.total) || 0), 0);
-  const totalGastos = gastos.filter(g => g.tipo === 'saida').reduce((acc, g) => acc + (Number(g.valor) || 0), 0);
+  const totalVendas = (vendas || []).reduce((acc, v) => acc + (Number(v.total) || 0), 0);
+  const totalGastos = (gastos || []).filter(g => g.tipo === 'saida').reduce((acc, g) => acc + (Number(g.valor) || 0), 0);
   const lucro = totalVendas - totalGastos;
 
   // Group sales by day for the chart
-  const salesByDay = vendas.reduce((acc, v) => {
+  const salesByDay = (vendas || []).reduce((acc, v) => {
     let date = 'Desconhecido';
     if (v.data?.toDate) {
       date = v.data.toDate().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
@@ -158,7 +158,7 @@ export default function Dashboard() {
             Vendas Recentes
           </h3>
           <div className="space-y-6">
-            {vendas.slice(0, 5).map((v, i) => (
+            {(vendas || []).slice(0, 5).map((v, i) => (
               <div key={i} className="flex items-center justify-between group cursor-pointer">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 lg:w-12 lg:h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors font-black text-xs">
@@ -177,7 +177,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
-            {vendas.length === 0 && (
+            {(vendas || []).length === 0 && (
               <div className="text-center py-10 text-slate-400 font-bold">Nenhuma venda registrada.</div>
             )}
           </div>

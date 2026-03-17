@@ -121,12 +121,12 @@ export default function Admin() {
         }
       };
 
-      await deleteInChunks('produtos', produtos);
-      await deleteInChunks('clientes', clientes);
-      await deleteInChunks('vendas', vendas);
-      await deleteInChunks('gastos', gastos);
-      await deleteInChunks('credito', credito);
-      await deleteInChunks('usuarios', usuarios);
+      await deleteInChunks('produtos', produtos || []);
+      await deleteInChunks('clientes', clientes || []);
+      await deleteInChunks('vendas', vendas || []);
+      await deleteInChunks('gastos', gastos || []);
+      await deleteInChunks('credito', credito || []);
+      await deleteInChunks('usuarios', usuarios || []);
 
       showToast('Sistema zerado com sucesso!', 'success');
       setShowZerarModal(false);

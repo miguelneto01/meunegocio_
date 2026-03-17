@@ -157,7 +157,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       }, (error) => handleFirestoreError(error, 'listen', 'clientes'));
 
     const unsubVendas = (isAdmin ? db.collection('vendas') : db.collection('vendas').where('userId', '==', user.id))
-      .limit(100)
+      .limit(500)
       .onSnapshot(snap => {
         const docs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         docs.sort((a: any, b: any) => {

@@ -7,8 +7,8 @@ export default function MobileDashboard({ onNavigate }: { onNavigate: (tab: stri
   const { user } = useAuth();
   const { vendas, produtos, clientes, gastos } = useData();
 
-  const totalVendas = vendas.reduce((acc, v) => acc + (Number(v.total) || 0), 0);
-  const totalGastos = gastos.filter(g => g.tipo === 'saida').reduce((acc, g) => acc + (Number(g.valor) || 0), 0);
+  const totalVendas = (vendas || []).reduce((acc, v) => acc + (Number(v.total) || 0), 0);
+  const totalGastos = (gastos || []).filter(g => g.tipo === 'saida').reduce((acc, g) => acc + (Number(g.valor) || 0), 0);
   const lucro = totalVendas - totalGastos;
 
   const quickActions = [
@@ -77,7 +77,7 @@ export default function MobileDashboard({ onNavigate }: { onNavigate: (tab: stri
         </div>
         
         <div className="space-y-4">
-          {vendas.slice(0, 3).map((v, i) => (
+          {(vendas || []).slice(0, 3).map((v, i) => (
             <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-2xl">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 font-black text-xs border border-slate-100">
@@ -91,7 +91,7 @@ export default function MobileDashboard({ onNavigate }: { onNavigate: (tab: stri
               <p className="font-black text-slate-800 text-sm">{formatCurrency(Number(v.total))}</p>
             </div>
           ))}
-          {vendas.length === 0 && (
+          {(vendas || []).length === 0 && (
             <p className="text-center py-4 text-slate-400 font-bold text-xs">Nenhuma venda hoje.</p>
           )}
         </div>

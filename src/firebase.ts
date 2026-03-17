@@ -3,6 +3,10 @@ import 'firebase/compat/firestore';
 import 'firebase/compat/auth';
 import firebaseConfig from '../firebase-applet-config.json';
 
+if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'TODO_KEYHERE') {
+  console.error('Firebase API Key is missing or invalid! Please check firebase-applet-config.json');
+}
+
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }

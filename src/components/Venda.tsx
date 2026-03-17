@@ -250,8 +250,8 @@ export default function Venda() {
 
   const produtosFiltrados = buscaProduto.trim() === '' 
     ? [] 
-    : produtos.filter(p => String(p.nome || '').toLowerCase().includes(buscaProduto.toLowerCase()));
-  const clientesFiltrados = clientes.filter(c => String(c.nome || '').toLowerCase().includes(clienteNome.toLowerCase()));
+    : (produtos || []).filter(p => String(p.nome || '').toLowerCase().includes(buscaProduto.toLowerCase()));
+  const clientesFiltrados = (clientes || []).filter(c => String(c.nome || '').toLowerCase().includes(clienteNome.toLowerCase()));
   const clienteExiste = clientesFiltrados.some(c => String(c.nome || '').toLowerCase() === clienteNome.toLowerCase());
 
   return (

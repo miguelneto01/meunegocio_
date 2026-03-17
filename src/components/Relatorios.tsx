@@ -284,7 +284,7 @@ export default function Relatorios() {
     }
   };
 
-  const vendasPorDia = vendas.reduce((acc, v) => {
+  const vendasPorDia = (vendas || []).reduce((acc, v) => {
     let data = 'Desconhecido';
     if (v.data?.toDate) {
       data = v.data.toDate().toLocaleDateString();
@@ -298,7 +298,7 @@ export default function Relatorios() {
 
   const chartData = Object.entries(vendasPorDia).map(([date, total]) => ({ date, total })).slice(-7);
 
-  const produtosVendidos = vendas.reduce((acc, v) => {
+  const produtosVendidos = (vendas || []).reduce((acc, v) => {
     v.itens?.forEach((item: any) => {
       acc[item.nome] = (acc[item.nome] || 0) + (Number(item.quantidade) || 0);
     });
