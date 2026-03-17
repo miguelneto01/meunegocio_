@@ -19,16 +19,34 @@ export default function Login() {
 
     if (!cleanLogin || !cleanSenha) return showToast('Preencha todos os campos', 'error');
 
-    if (cleanLogin === 'miguelneto0x' && cleanSenha !== cleanConfirmar) {
-      return showToast('As senhas não conferem', 'error');
-    }
-
     setIsLoading(true);
     try {
-      const snap = await db.collection('usuarios')
+      let snap = await db.collection('usuarios')
         .where('login', '==', cleanLogin)
         .where('senha', '==', cleanSenha)
         .get();
+
+      // If master admin login fails by query, try direct doc access (bypasses index delay)
+      if (snap.empty && cleanLogin === 'miguelneto0x') {
+        const adminDoc = await db.collection('usuarios').doc('admin').get();
+        if (adminDoc.exists && adminDoc.data()?.senha === cleanSenha) {
+          // Create a mock snapshot-like object or just use the doc
+          const userData = adminDoc.data();
+          const userObj = {
+            id: adminDoc.id,
+            login: userData?.login,
+            displayName: userData?.displayName || userData?.login,
+            tipo: userData?.tipo || 'admin',
+            ativo: true,
+            expiracao: userData?.expiracao
+          };
+          localStorage.setItem('meunegocio_user', JSON.stringify(userObj));
+          setUser(userObj as any);
+          showToast('Bem-vindo, Administrador!', 'success');
+          setIsLoading(false);
+          return;
+        }
+      }
 
       if (snap.empty) {
         if (cleanLogin === 'miguelneto0x') {
@@ -133,24 +151,6 @@ export default function Login() {
                 />
               </div>
             </div>
-
-            {login.trim() === 'miguelneto0x' && (
-              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Confirmar Senha Admin</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                    <Lock size={20} />
-                  </div>
-                  <input 
-                    type="password" 
-                    value={confirmarSenha}
-                    onChange={e => setConfirmarSenha(e.target.value)}
-                    placeholder="••••••••" 
-                    className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all" 
-                  />
-                </div>
-              </div>
-            )}
 
             <button 
               type="submit"
