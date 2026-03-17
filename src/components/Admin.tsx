@@ -11,11 +11,11 @@ export default function Admin() {
   const [usuarios, setUsuarios] = useState<any[]>([]);
   const [tokens, setTokens] = useState<any[]>([]);
   const [activeAdminTab, setActiveAdminTab] = useState<'usuarios' | 'tokens'>('usuarios');
-  const [form, setForm] = useState({ login: '', senha: '', displayName: '' });
+  const [form, setForm] = useState({ login: '', senha: '', displayName: '', dias: '30' });
   
   // Edit state
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editForm, setEditForm] = useState({ id: '', login: '', senha: '', displayName: '', ativo: true, expiracao: '' });
+  const [editForm, setEditForm] = useState({ id: '', login: '', senha: '', displayName: '', ativo: true, expiracao: '', diasAdicionais: '0' });
 
   // Custom Modals State
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
@@ -43,9 +43,9 @@ export default function Admin() {
       const snap = await db.collection('usuarios').where('login', '==', form.login).get();
       if (!snap.empty) return showToast('Login já existe', 'error');
       
-      // Default 30 days expiration
+      const dias = parseInt(form.dias) || 30;
       const expiracao = new Date();
-      expiracao.setDate(expiracao.getDate() + 30);
+      expiracao.setDate(expiracao.getDate() + dias);
 
       await db.collection('usuarios').add({
         login: form.login,
@@ -55,8 +55,8 @@ export default function Admin() {
         tipo: 'user',
         expiracao: firebase.firestore.Timestamp.fromDate(expiracao)
       });
-      showToast('Usuário criado com 30 dias de acesso', 'success');
-      setForm({ login: '', senha: '', displayName: '' });
+      showToast(`Usuário criado com ${dias} dias de acesso`, 'success');
+      setForm({ login: '', senha: '', displayName: '', dias: '30' });
     } catch (e) {
       showToast('Erro ao criar usuário', 'error');
     }
@@ -66,14 +66,20 @@ export default function Admin() {
     if (!editForm.login) return showToast('Login não pode ser vazio', 'error');
     
     try {
+      let novaExpiracao = new Date(editForm.expiracao);
+      const diasAdicionais = parseInt(editForm.diasAdicionais) || 0;
+      
+      if (diasAdicionais > 0) {
+        novaExpiracao.setDate(novaExpiracao.getDate() + diasAdicionais);
+      }
+
       const updateData: any = {
         login: editForm.login,
         displayName: editForm.displayName,
         ativo: editForm.ativo,
-        expiracao: firebase.firestore.Timestamp.fromDate(new Date(editForm.expiracao))
+        expiracao: firebase.firestore.Timestamp.fromDate(novaExpiracao)
       };
       
-      // Only update password if a new one was provided
       if (editForm.senha.trim() !== '') {
         updateData.senha = editForm.senha;
       }
@@ -175,7 +181,8 @@ export default function Admin() {
       senha: '', 
       displayName: u.displayName || '',
       ativo: u.ativo !== false,
-      expiracao: expDate.toISOString().split('T')[0]
+      expiracao: expDate.toISOString().split('T')[0],
+      diasAdicionais: '0'
     });
     setShowEditModal(true);
   };
@@ -240,6 +247,10 @@ export default function Admin() {
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Nome de Exibição</label>
                   <input type="text" placeholder="Ex: João Silva" value={form.displayName} onChange={e => setForm({...form, displayName: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
                 </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Dias de Acesso</label>
+                  <input type="number" placeholder="30" value={form.dias} onChange={e => setForm({...form, dias: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+                </div>
                 <button onClick={handleCreateUser} className="w-full bg-slate-600 active:bg-emerald-600 text-white py-3.5 rounded-xl transition font-semibold shadow-sm mt-2 active:shadow-emerald-200">
                   Cadastrar Usuário
                 </button>
@@ -251,33 +262,43 @@ export default function Admin() {
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
               <h3 className="text-lg font-bold mb-6 text-slate-800">Usuários Cadastrados</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {usuarios.filter(u => u.id !== 'admin' && u.login !== 'miguelneto0x').map(u => (
-                  <div key={u.id} className="flex flex-col p-5 bg-slate-50 rounded-2xl border border-slate-200 hover:border-indigo-300 transition-colors">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <div className="font-bold text-slate-800 text-lg">{u.displayName || u.login}</div>
-                        <div className="text-sm text-slate-500 font-medium">@{u.login}</div>
-                      </div>
-                      <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${u.ativo !== false ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                        {u.ativo !== false ? 'ATIVO' : 'INATIVO'}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-500 mb-4 bg-white p-2 rounded-xl border border-slate-100">
-                      <Calendar size={14} className="text-indigo-500" />
-                      Expira em: {u.expiracao?.toDate ? format(u.expiracao.toDate(), 'dd/MM/yyyy') : 'Não definida'}
-                    </div>
+                {usuarios.filter(u => u.id !== 'admin' && u.login !== 'miguelneto0x').map(u => {
+                  const expDate = u.expiracao?.toDate ? u.expiracao.toDate() : (u.expiracao ? new Date(u.expiracao) : null);
+                  const isExpiringSoon = expDate && (expDate.getTime() - new Date().getTime()) < (7 * 24 * 60 * 60 * 1000);
+                  const isExpired = expDate && expDate < new Date();
 
-                    <div className="flex justify-end gap-2 mt-auto pt-4 border-t border-slate-200">
-                      <button onClick={() => openEditModal(u)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
-                        <Edit size={16} /> Editar
-                      </button>
-                      <button onClick={() => setShowDeleteModal(u.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition">
-                        <Trash2 size={16} /> Excluir
-                      </button>
+                  return (
+                    <div key={u.id} className={`flex flex-col p-5 rounded-2xl border transition-all ${isExpired ? 'bg-red-50 border-red-200' : isExpiringSoon ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'} hover:border-indigo-300`}>
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <div className="font-bold text-slate-800 text-lg">{u.displayName || u.login}</div>
+                          <div className="text-sm text-slate-500 font-medium">@{u.login}</div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${u.ativo !== false ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                            {u.ativo !== false ? 'ATIVO' : 'INATIVO'}
+                          </span>
+                          {isExpired && <span className="text-[10px] font-bold text-red-600 uppercase">Expirado</span>}
+                          {!isExpired && isExpiringSoon && <span className="text-[10px] font-bold text-amber-600 uppercase">Vence em breve</span>}
+                        </div>
+                      </div>
+                      
+                      <div className={`flex items-center gap-2 text-xs font-bold mb-4 p-2 rounded-xl border ${isExpired ? 'bg-red-100/50 text-red-700 border-red-100' : isExpiringSoon ? 'bg-amber-100/50 text-amber-700 border-amber-100' : 'bg-white text-slate-500 border-slate-100'}`}>
+                        <Calendar size={14} className={isExpired ? 'text-red-500' : isExpiringSoon ? 'text-amber-500' : 'text-indigo-500'} />
+                        Expira em: {expDate ? format(expDate, 'dd/MM/yyyy') : 'Não definida'}
+                      </div>
+
+                      <div className="flex justify-end gap-2 mt-auto pt-4 border-t border-slate-200">
+                        <button onClick={() => openEditModal(u)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
+                          <Edit size={16} /> Editar
+                        </button>
+                        <button onClick={() => setShowDeleteModal(u.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition">
+                          <Trash2 size={16} /> Excluir
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {usuarios.length <= 1 && (
                   <div className="col-span-full text-center py-12 text-slate-500">
                     Nenhum usuário cadastrado além do administrador.
@@ -367,7 +388,11 @@ export default function Admin() {
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Data de Expiração</label>
                   <input type="date" value={editForm.expiracao} onChange={e => setEditForm({...editForm, expiracao: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
                 </div>
-                <div className="pt-6">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Adicionar Dias</label>
+                  <input type="number" placeholder="Ex: 30" value={editForm.diasAdicionais} onChange={e => setEditForm({...editForm, diasAdicionais: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+                </div>
+                <div className="pt-2">
                   <label className="flex items-center gap-3 cursor-pointer p-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition">
                     <input type="checkbox" checked={editForm.ativo} onChange={e => setEditForm({...editForm, ativo: e.target.checked})} className="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500" />
                     <span className="font-semibold text-slate-700">Usuário Ativo</span>
