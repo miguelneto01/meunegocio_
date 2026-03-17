@@ -1,0 +1,125 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: usuarios
+// Fields:
+//   - login: string (required)
+//   - senha: string (required)
+//   - displayName: string (optional)
+//   - ativo: bool (required)
+//   - tipo: string (required, 'admin' or 'user')
+//   - expiracao: timestamp (optional)
+//
+// Collection: produtos
+// Fields:
+//   - nome: string (required)
+//   - precoCompra: number
+//   - precoVenda: number (required)
+//   - estoque: number (required)
+//   - categoria: string
+//
+// Collection: clientes
+// Fields:
+//   - nome: string (required)
+//   - telefone: string
+//   - endereco: string
+//   - totalComprado: number
+//
+// Collection: vendas
+// Fields:
+//   - data: timestamp (required)
+//   - clienteId: string
+//   - itens: list (required)
+//   - total: number (required)
+//   - formaPagamento: string
+//   - usuarioId: string (required)
+//
+// Collection: gastos
+// Fields:
+//   - descricao: string (required)
+//   - valor: number (required)
+//   - data: timestamp (required)
+//   - categoria: string
+//
+// Collection: credito
+// Fields:
+//   - clienteId: string (required)
+//   - valor: number (required)
+//   - data: timestamp (required)
+//   - status: string (required, 'pendente' or 'pago')
+//   - vendaId: string
+//
+// Collection: tokens
+// Fields:
+//   - valor: string (required)
+//   - usada: bool (required)
+//   - criadoEm: timestamp
+//   - usadaPor: string
+//   - dataUso: timestamp
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+             request.auth.token.email == "contatogoupmkt@gmail.com" && 
+             request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUsuario(data) {
+      return data.login is string && data.login.size() > 0 && data.login.size() < 50 &&
+             data.ativo is bool &&
+             data.tipo in ['admin', 'user'];
+    }
+
+    function isValidProduto(data) {
+      return data.nome is string && data.nome.size() > 0 && data.nome.size() < 100 &&
+             data.precoVenda is number && data.precoVenda >= 0 &&
+             data.estoque is number &&
+             data.userId is string;
+    }
+
+    function isValidVenda(data) {
+      return data.data is timestamp &&
+             data.itens is list &&
+             data.total is number && data.total >= 0 &&
+             data.userId is string;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

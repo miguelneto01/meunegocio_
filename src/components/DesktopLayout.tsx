@@ -141,7 +141,7 @@ export default function DesktopLayout() {
               </div>
             )}
             <button 
-              onClick={() => setUser(null)}
+              onClick={() => { localStorage.removeItem('meunegocio_user'); setUser(null); }}
               className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all"
               title="Sair"
             >

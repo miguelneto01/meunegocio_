@@ -160,7 +160,7 @@ export default function MobileLayout() {
                 </button>
               ))}
               <button
-                onClick={() => setUser(null)}
+                onClick={() => { localStorage.removeItem('meunegocio_user'); setUser(null); }}
                 className="flex items-center gap-3 p-4 rounded-2xl bg-red-50 text-red-600 col-span-2"
               >
                 <LogOut size={20} />

@@ -6,6 +6,7 @@ export type User = {
   login: string;
   displayName: string;
   tipo: 'admin' | 'user';
+  accessExpiresAt?: any;
 };
 
 type DataContextType = {
@@ -16,6 +17,8 @@ type DataContextType = {
   vendas: any[];
   gastos: any[];
   credito: any[];
+  usuarios: any[];
+  tokens: any[];
   loading: boolean;
 };
 
@@ -27,6 +30,8 @@ export const AuthContext = createContext<DataContextType>({
   vendas: [],
   gastos: [],
   credito: [],
+  usuarios: [],
+  tokens: [],
   loading: true,
 });
 
@@ -37,6 +42,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const [vendas, setVendas] = useState<any[]>([]);
   const [gastos, setGastos] = useState<any[]>([]);
   const [credito, setCredito] = useState<any[]>([]);
+  const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [tokens, setTokens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,6 +53,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       setVendas([]);
       setGastos([]);
       setCredito([]);
+      setUsuarios([]);
+      setTokens([]);
       setLoading(false);
       return;
     }
@@ -53,6 +62,17 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
 
     const isAdmin = user.tipo === 'admin';
+
+    // Listen to current user data to keep accessExpiresAt updated
+    let unsubUser = () => {};
+    if (!isAdmin) {
+      unsubUser = db.collection('usuarios').doc(user.id).onSnapshot(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          setUser(prev => prev ? { ...prev, accessExpiresAt: data?.accessExpiresAt } : null);
+        }
+      });
+    }
 
     const unsubProdutos = (isAdmin ? db.collection('produtos') : db.collection('produtos').where('userId', '==', user.id))
       .onSnapshot(snap => {
@@ -85,20 +105,31 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubCredito = (isAdmin ? db.collection('credito') : db.collection('credito').where('userId', '==', user.id))
       .onSnapshot(snap => {
         setCredito(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        setLoading(false);
       });
 
+    const unsubUsuarios = isAdmin ? db.collection('usuarios').onSnapshot(snap => {
+      setUsuarios(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }) : () => {};
+
+    const unsubTokens = isAdmin ? db.collection('tokens').onSnapshot(snap => {
+      setTokens(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
+    }) : () => { setLoading(false); };
+
     return () => {
+      unsubUser();
       unsubProdutos();
       unsubClientes();
       unsubVendas();
       unsubGastos();
       unsubCredito();
+      unsubUsuarios();
+      unsubTokens();
     };
-  }, [user]);
+  }, [user?.id]);
 
   return (
-    <AuthContext.Provider value={{ user, setUser, produtos, clientes, vendas, gastos, credito, loading }}>
+    <AuthContext.Provider value={{ user, setUser, produtos, clientes, vendas, gastos, credito, usuarios, tokens, loading }}>
       {children}
     </AuthContext.Provider>
   );

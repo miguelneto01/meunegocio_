@@ -1,0 +1,115 @@
+{
+  "entities": {
+    "Usuario": {
+      "title": "Usuário",
+      "description": "Dados de acesso e perfil do usuário",
+      "type": "object",
+      "properties": {
+        "login": { "type": "string", "description": "Login do usuário" },
+        "senha": { "type": "string", "description": "Senha do usuário" },
+        "displayName": { "type": "string", "description": "Nome de exibição" },
+        "ativo": { "type": "boolean", "description": "Status da conta" },
+        "tipo": { "type": "string", "enum": ["admin", "user"], "description": "Tipo de usuário" },
+        "expiracao": { "type": "string", "format": "date-time", "description": "Data de expiração do acesso" }
+      },
+      "required": ["login", "senha", "ativo", "tipo"]
+    },
+    "Produto": {
+      "title": "Produto",
+      "description": "Dados do produto em estoque",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "precoCompra": { "type": "number" },
+        "precoVenda": { "type": "number" },
+        "estoque": { "type": "number" },
+        "categoria": { "type": "string" }
+      },
+      "required": ["nome", "precoVenda", "estoque"]
+    },
+    "Cliente": {
+      "title": "Cliente",
+      "description": "Dados do cliente",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string" },
+        "telefone": { "type": "string" },
+        "endereco": { "type": "string" },
+        "totalComprado": { "type": "number" }
+      },
+      "required": ["nome"]
+    },
+    "Venda": {
+      "title": "Venda",
+      "description": "Registro de venda realizada",
+      "type": "object",
+      "properties": {
+        "data": { "type": "string", "format": "date-time" },
+        "clienteId": { "type": "string" },
+        "itens": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "nome": { "type": "string" },
+              "qtd": { "type": "number" },
+              "preco": { "type": "number" }
+            }
+          }
+        },
+        "total": { "type": "number" },
+        "formaPagamento": { "type": "string" },
+        "usuarioId": { "type": "string" }
+      },
+      "required": ["data", "itens", "total", "usuarioId"]
+    },
+    "Gasto": {
+      "title": "Gasto",
+      "description": "Registro de despesa",
+      "type": "object",
+      "properties": {
+        "descricao": { "type": "string" },
+        "valor": { "type": "number" },
+        "data": { "type": "string", "format": "date-time" },
+        "categoria": { "type": "string" }
+      },
+      "required": ["descricao", "valor", "data"]
+    },
+    "Credito": {
+      "title": "Crédito (Fiado)",
+      "description": "Registro de dívida de cliente",
+      "type": "object",
+      "properties": {
+        "clienteId": { "type": "string" },
+        "valor": { "type": "number" },
+        "data": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pendente", "pago"] },
+        "vendaId": { "type": "string" }
+      },
+      "required": ["clienteId", "valor", "data", "status"]
+    },
+    "Token": {
+      "title": "Token de Acesso",
+      "description": "Chave para liberar acesso ao sistema",
+      "type": "object",
+      "properties": {
+        "valor": { "type": "string" },
+        "usada": { "type": "boolean" },
+        "criadoEm": { "type": "string", "format": "date-time" },
+        "usadaPor": { "type": "string" },
+        "dataUso": { "type": "string", "format": "date-time" }
+      },
+      "required": ["valor", "usada"]
+    }
+  },
+  "firestore": {
+    "/usuarios/{usuarioId}": { "schema": "Usuario", "description": "Coleção de usuários" },
+    "/produtos/{produtoId}": { "schema": "Produto", "description": "Coleção de produtos" },
+    "/clientes/{clienteId}": { "schema": "Cliente", "description": "Coleção de clientes" },
+    "/vendas/{vendaId}": { "schema": "Venda", "description": "Coleção de vendas" },
+    "/gastos/{gastoId}": { "schema": "Gasto", "description": "Coleção de gastos" },
+    "/credito/{creditoId}": { "schema": "Credito", "description": "Coleção de créditos/fiados" },
+    "/tokens/{tokenId}": { "schema": "Token", "description": "Coleção de tokens de acesso" }
+  }
+}

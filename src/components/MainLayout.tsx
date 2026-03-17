@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DesktopLayout from './DesktopLayout';
 import MobileLayout from './MobileLayout';
+import AccessGuard from './AccessGuard';
 
 export default function MainLayout() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -13,5 +14,9 @@ export default function MainLayout() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  return isMobile ? <MobileLayout /> : <DesktopLayout />;
+  return (
+    <AccessGuard>
+      {isMobile ? <MobileLayout /> : <DesktopLayout />}
+    </AccessGuard>
+  );
 }

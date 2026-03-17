@@ -1,25 +1,28 @@
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/firestore';
-
-const firebaseConfig = {
-    apiKey: "AIzaSyBayEQj4CaBj60DV7vsZ15Bl3hPa7yyG1w",
-    authDomain: "meunegocio-43af7.firebaseapp.com",
-    projectId: "meunegocio-43af7",
-    storageBucket: "meunegocio-43af7.firebasestorage.app",
-    messagingSenderId: "993491133200",
-    appId: "1:993491133200:web:9810fad2e7ace327c8fb95"
-};
+import 'firebase/compat/auth';
+import firebaseConfig from '../firebase-applet-config.json';
 
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
-    firebase.firestore().enablePersistence().catch((err) => {
-        if (err.code === 'failed-precondition') {
-            console.warn('Persistence failed: Multiple tabs open');
-        } else if (err.code === 'unimplemented') {
-            console.warn('Persistence not supported by browser');
-        }
-    });
 }
 
-export const db = firebase.firestore();
+// @ts-ignore
+export const db = firebase.app().firestore(firebaseConfig.firestoreDatabaseId);
+
+// Force long polling to avoid WebSocket issues in iframes
+db.settings({ experimentalForceLongPolling: true });
+
+export const auth = firebase.auth();
+export const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+// Test connection to diagnose "client is offline"
+db.collection('_connection_test').doc('ping').get({ source: 'server' })
+  .then(() => console.log("Firestore connected successfully"))
+  .catch((err) => {
+    if (err.message.includes('offline')) {
+      console.error("Firestore Error: The client is offline. Please check if the Firestore API is enabled in the Google Cloud Console and that the database is provisioned.");
+    }
+  });
+
 export default firebase;
