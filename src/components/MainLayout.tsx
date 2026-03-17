@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
+// Main layout component that switches between mobile and desktop views
 import DesktopLayout from './DesktopLayout';
 import MobileLayout from './MobileLayout';
-import AccessGuard from './AccessGuard';
 
 export default function MainLayout() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -14,9 +14,5 @@ export default function MainLayout() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  return (
-    <AccessGuard>
-      {isMobile ? <MobileLayout /> : <DesktopLayout />}
-    </AccessGuard>
-  );
+  return isMobile ? <MobileLayout /> : <DesktopLayout />;
 }
