@@ -33,6 +33,8 @@ export default function Produtos() {
         showToast('Produto cadastrado', 'success');
       }
       setShowModal(false);
+      setForm({ nome: '', custo: '', preco: '', estoque: '' });
+      setEditId('');
     } catch (e) {
       showToast('Erro ao salvar', 'error');
     }

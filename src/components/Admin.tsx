@@ -4,6 +4,7 @@ import { useAuth, useData } from '../store';
 import { showToast } from './Toast';
 import { Trash2, UserPlus, Edit, ShieldCheck, AlertTriangle, Key, Calendar, Plus, Copy, Check } from 'lucide-react';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function Admin() {
   const { user } = useAuth();
@@ -11,7 +12,7 @@ export default function Admin() {
   const [usuarios, setUsuarios] = useState<any[]>([]);
   const [tokens, setTokens] = useState<any[]>([]);
   const [activeAdminTab, setActiveAdminTab] = useState<'usuarios' | 'tokens'>('usuarios');
-  const [form, setForm] = useState({ login: '', senha: '', displayName: '', dias: '30' });
+  const [form, setForm] = useState({ login: '', senha: '', displayName: '', expiracao: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] });
   
   // Edit state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -43,9 +44,7 @@ export default function Admin() {
       const snap = await db.collection('usuarios').where('login', '==', form.login).get();
       if (!snap.empty) return showToast('Login já existe', 'error');
       
-      const dias = parseInt(form.dias) || 30;
-      const expiracao = new Date();
-      expiracao.setDate(expiracao.getDate() + dias);
+      const expiracao = new Date(form.expiracao + 'T23:59:59');
 
       await db.collection('usuarios').add({
         login: form.login,
@@ -55,8 +54,8 @@ export default function Admin() {
         tipo: 'user',
         expiracao: firebase.firestore.Timestamp.fromDate(expiracao)
       });
-      showToast(`Usuário criado com ${dias} dias de acesso`, 'success');
-      setForm({ login: '', senha: '', displayName: '', dias: '30' });
+      showToast(`Usuário criado com sucesso!`, 'success');
+      setForm({ login: '', senha: '', displayName: '', expiracao: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] });
     } catch (e) {
       showToast('Erro ao criar usuário', 'error');
     }
@@ -173,6 +172,17 @@ export default function Admin() {
     showToast('Chave copiada!', 'success');
   };
 
+  const handleExportLogin = (u: any) => {
+    const text = `*DADOS DE ACESSO - MEU NEGÓCIO*\n\n` +
+                 `👤 *Usuário:* ${u.login}\n` +
+                 `🔑 *Senha:* ${u.senha || '********'}\n\n` +
+                 `Muito obrigado por utilizar nosso sistema! Estamos à disposição para qualquer dúvida.\n` +
+                 `_Acesse em: https://meunegocio-six.vercel.app/_`;
+    
+    navigator.clipboard.writeText(text);
+    showToast('Dados de login copiados!', 'success');
+  };
+
   const openEditModal = (u: any) => {
     const expDate = u.expiracao?.toDate ? u.expiracao.toDate() : (u.expiracao ? new Date(u.expiracao) : new Date());
     setEditForm({
@@ -248,8 +258,8 @@ export default function Admin() {
                   <input type="text" placeholder="Ex: João Silva" value={form.displayName} onChange={e => setForm({...form, displayName: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Dias de Acesso</label>
-                  <input type="number" placeholder="30" value={form.dias} onChange={e => setForm({...form, dias: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Data de Expiração</label>
+                  <input type="date" value={form.expiracao} onChange={e => setForm({...form, expiracao: e.target.value})} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
                 </div>
                 <button onClick={handleCreateUser} className="w-full bg-slate-600 active:bg-emerald-600 text-white py-3.5 rounded-xl transition font-semibold shadow-sm mt-2 active:shadow-emerald-200">
                   Cadastrar Usuário
@@ -285,10 +295,13 @@ export default function Admin() {
                       
                       <div className={`flex items-center gap-2 text-xs font-bold mb-4 p-2 rounded-xl border ${isExpired ? 'bg-red-100/50 text-red-700 border-red-100' : isExpiringSoon ? 'bg-amber-100/50 text-amber-700 border-amber-100' : 'bg-white text-slate-500 border-slate-100'}`}>
                         <Calendar size={14} className={isExpired ? 'text-red-500' : isExpiringSoon ? 'text-amber-500' : 'text-indigo-500'} />
-                        Expira em: {expDate ? format(expDate, 'dd/MM/yyyy') : 'Não definida'}
+                        Expira em: {expDate ? format(expDate, "dd/MM/yyyy '—' MMMM", { locale: ptBR }) : 'Não definida'}
                       </div>
 
                       <div className="flex justify-end gap-2 mt-auto pt-4 border-t border-slate-200">
+                        <button onClick={() => handleExportLogin(u)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-emerald-600 hover:bg-emerald-50 rounded-lg transition" title="Exportar Login">
+                          <Copy size={16} /> Exportar
+                        </button>
                         <button onClick={() => openEditModal(u)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
                           <Edit size={16} /> Editar
                         </button>
@@ -335,9 +348,23 @@ export default function Admin() {
                       {t.usada ? 'Utilizada' : 'Disponível'}
                     </span>
                   </div>
-                  <div className="font-mono font-black text-lg tracking-widest text-slate-800 mb-4 text-center select-all">
+                  <div className="font-mono font-black text-lg tracking-widest text-slate-800 mb-2 text-center select-all">
                     {t.valor}
                   </div>
+                  
+                  <div className="text-[10px] text-slate-400 font-bold mb-4 flex flex-col gap-1">
+                    <div className="flex justify-between">
+                      <span>Criada em:</span>
+                      <span>{t.criadoEm?.toDate ? format(t.criadoEm.toDate(), 'dd/MM/yy HH:mm') : '-'}</span>
+                    </div>
+                    {t.usada && (
+                      <div className="flex justify-between text-emerald-600">
+                        <span>Usada em:</span>
+                        <span>{t.dataUso?.toDate ? format(t.dataUso.toDate(), 'dd/MM/yy HH:mm') : '-'}</span>
+                      </div>
+                    )}
+                  </div>
+
                   {!t.usada && (
                     <button 
                       onClick={() => copyToClipboard(t.valor)}
@@ -346,11 +373,6 @@ export default function Admin() {
                       {copiedToken === t.valor ? <Check size={14} /> : <Copy size={14} />}
                       {copiedToken === t.valor ? 'Copiado' : 'Copiar Chave'}
                     </button>
-                  )}
-                  {t.usada && (
-                    <div className="text-[9px] text-slate-400 font-bold text-center uppercase">
-                      Usada em {t.dataUso?.toDate ? format(t.dataUso.toDate(), 'dd/MM/yyyy') : '-'}
-                    </div>
                   )}
                 </div>
               ))}

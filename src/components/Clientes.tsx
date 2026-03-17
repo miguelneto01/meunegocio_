@@ -46,6 +46,8 @@ export default function Clientes() {
         showToast('Cliente cadastrado', 'success');
       }
       setShowModal(false);
+      setForm({ nome: '', telefone: '', email: '', cep: '', endereco: '', numero: '', bairro: '', cidade: '' });
+      setEditId('');
     } catch (e) {
       showToast('Erro ao salvar', 'error');
     }
