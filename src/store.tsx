@@ -85,33 +85,44 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
     const unsubVendas = (isAdmin ? db.collection('vendas') : db.collection('vendas').where('userId', '==', user.id))
-      .limit(100)
+      .orderBy('data', 'desc')
+      .limit(50)
       .onSnapshot(snap => {
-        const docs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // Sort in memory to avoid composite index requirement
-        docs.sort((a: any, b: any) => {
-          const dateA = a.data?.toDate ? a.data.toDate() : (a.data && !isNaN(new Date(a.data).getTime()) ? new Date(a.data) : (a.data?.seconds ? new Date(a.data.seconds * 1000) : new Date(0)));
-          const dateB = b.data?.toDate ? b.data.toDate() : (b.data && !isNaN(new Date(b.data).getTime()) ? new Date(b.data) : (b.data?.seconds ? new Date(b.data.seconds * 1000) : new Date(0)));
-          return dateB.getTime() - dateA.getTime();
-        });
-        setVendas(docs);
+        setVendas(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }, error => {
+        // Fallback if index is missing
+        if (error.code === 'failed-precondition') {
+          (isAdmin ? db.collection('vendas') : db.collection('vendas').where('userId', '==', user.id))
+            .limit(50)
+            .onSnapshot(snap => {
+              const docs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+              docs.sort((a: any, b: any) => {
+                const dateA = a.data?.toDate?.() || new Date(a.data || 0);
+                const dateB = b.data?.toDate?.() || new Date(b.data || 0);
+                return dateB.getTime() - dateA.getTime();
+              });
+              setVendas(docs);
+            });
+        }
       });
 
     const unsubGastos = (isAdmin ? db.collection('gastos') : db.collection('gastos').where('userId', '==', user.id))
+      .limit(50)
       .onSnapshot(snap => {
         setGastos(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       });
 
     const unsubCredito = (isAdmin ? db.collection('credito') : db.collection('credito').where('userId', '==', user.id))
+      .limit(50)
       .onSnapshot(snap => {
         setCredito(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       });
 
-    const unsubUsuarios = isAdmin ? db.collection('usuarios').onSnapshot(snap => {
+    const unsubUsuarios = isAdmin ? db.collection('usuarios').limit(100).onSnapshot(snap => {
       setUsuarios(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     }) : () => {};
 
-    const unsubTokens = isAdmin ? db.collection('tokens').onSnapshot(snap => {
+    const unsubTokens = isAdmin ? db.collection('tokens').limit(100).onSnapshot(snap => {
       setTokens(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     }) : () => { setLoading(false); };
